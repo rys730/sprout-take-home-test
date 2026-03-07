@@ -1,0 +1,382 @@
+basePath: /api/v1
+definitions:
+  internal_handler.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  internal_handler.LoginResponse:
+    properties:
+      email:
+        type: string
+      expires_at:
+        type: integer
+      roles:
+        items:
+          type: string
+        type: array
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_handler.RefreshTokenRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  sprout-backend_internal_domain.CreateAccountRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+      starting_balance:
+        description: 'optional: creates an opening balance journal entry'
+        type: number
+    required:
+    - code
+    - name
+    - parent_id
+    type: object
+  sprout-backend_internal_domain.UpdateAccountRequest:
+    properties:
+      balance:
+        description: 'optional: adjusts balance via journal entry'
+        type: number
+      code:
+        type: string
+      name:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: engineering@sprout.co
+    name: Sprout Engineering
+  description: Backend API for Sprout Accounting — Chart of Accounts, General Journal,
+    and AR Management.
+  termsOfService: http://swagger.io/terms/
+  title: Sprout Accounting API
+  version: "1.0"
+paths:
+  /accounts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of accounts with optional filtering
+      parameters:
+      - description: Search by code or name
+        in: query
+        name: search
+        type: string
+      - description: Filter by account type (asset, liability, equity, revenue, expense)
+        in: query
+        name: type
+        type: string
+      - description: Filter by parent account ID
+        in: query
+        name: parent_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []Account, count: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to retrieve accounts
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List accounts
+      tags:
+      - accounts
+    post:
+      consumes:
+      - application/json
+      description: Create a new account in the chart of accounts. Optionally set a
+        starting balance.
+      parameters:
+      - description: Account data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: Account, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error or duplicate code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new account
+      tags:
+      - accounts
+  /accounts/{id}:
+    delete:
+      description: Delete an account by ID. Cannot delete system accounts, control
+        accounts, or accounts with children/journal references.
+      parameters:
+      - description: Account UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Cannot delete (system/children/referenced)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an account
+      tags:
+      - accounts
+    get:
+      description: Retrieve a single account by its UUID
+      parameters:
+      - description: Account UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: Account'
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Account not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get account by ID
+      tags:
+      - accounts
+    put:
+      consumes:
+      - application/json
+      description: Update an existing account's code, name, or balance. At least one
+        field must be provided.
+      parameters:
+      - description: Account UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.UpdateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: Account, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update an account
+      tags:
+      - accounts
+  /accounts/tree:
+    get:
+      description: Returns the full chart of accounts as a hierarchical tree with
+        rolled-up balances
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []AccountTreeNode'
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to retrieve account tree
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get account tree
+      tags:
+      - accounts
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.LoginResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to generate token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange an existing JWT token for a new one
+      parameters:
+      - description: Current token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Failed to refresh token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh JWT token
+      tags:
+      - auth
+  /health:
+    get:
+      description: Returns the current health status of the server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status, timestamp, uptime
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - health
+securityDefinitions:
+  BearerAuth:
+    description: Enter your bearer token in the format **Bearer &lt;token&gt;**
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
