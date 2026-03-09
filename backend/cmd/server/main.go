@@ -71,9 +71,11 @@ func main() {
 
 	// Initialize repositories
 	accountRepo := repository.NewAccountRepository(db.GetPool())
+	journalRepo := repository.NewJournalRepository(db.GetPool())
 
 	// Initialize use cases
 	accountUseCase := usecase.NewAccountUseCase(accountRepo)
+	journalUseCase := usecase.NewJournalUseCase(journalRepo)
 
 	e := echo.New()
 
@@ -88,6 +90,7 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(jwtManager)
 	accountHandler := handler.NewAccountHandler(accountUseCase)
+	journalHandler := handler.NewJournalHandler(journalUseCase)
 	api := e.Group("/api")
 
 	v1 := api.Group("/v1")
@@ -119,6 +122,16 @@ func main() {
 	account.POST("", accountHandler.CreateAccount)
 	account.PUT("/:id", accountHandler.UpdateAccount)
 	account.DELETE("/:id", accountHandler.DeleteAccount)
+
+	// Jurnal Umum (General Journal) routes
+	journal := v1.Group("/journals")
+	journal.GET("", journalHandler.ListJournals)
+	journal.GET("/:id", journalHandler.GetJournal)
+	journal.POST("", journalHandler.CreateJournal)
+	journal.PUT("/:id", journalHandler.UpdateJournal)
+	journal.POST("/:id/post", journalHandler.PostJournal)
+	journal.POST("/:id/reverse", journalHandler.ReverseJournal)
+	journal.DELETE("/:id", journalHandler.DeleteJournal)
 
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	logger.Infof("Server starting on %s", addr)

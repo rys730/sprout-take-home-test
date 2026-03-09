@@ -3,7 +3,7 @@
 -- ============================================================================
 
 -- name: GetJournalEntryLinesByEntryID :many
-SELECT jel.id, jel.journal_entry_id, jel.account_id, jel.description,
+SELECT jel.id, jel.journal_entry_id, jel.account_id,
        jel.debit, jel.credit, jel.line_order, jel.created_at,
        a.code AS account_code, a.name AS account_name
 FROM journal_entry_lines jel
@@ -12,9 +12,9 @@ WHERE jel.journal_entry_id = $1
 ORDER BY jel.line_order ASC;
 
 -- name: CreateJournalEntryLine :one
-INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, debit, credit, line_order)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, journal_entry_id, account_id, description, debit, credit, line_order, created_at;
+INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, line_order)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, journal_entry_id, account_id, debit, credit, line_order, created_at;
 
 -- name: DeleteJournalEntryLinesByEntryID :exec
 DELETE FROM journal_entry_lines WHERE journal_entry_id = $1;
@@ -26,7 +26,7 @@ FROM journal_entry_lines
 WHERE journal_entry_id = $1;
 
 -- name: GetAccountLedger :many
-SELECT jel.id, jel.journal_entry_id, jel.account_id, jel.description,
+SELECT jel.id, jel.journal_entry_id, jel.account_id,
        jel.debit, jel.credit, jel.line_order, jel.created_at,
        je.entry_number, je.date AS entry_date, je.status AS entry_status
 FROM journal_entry_lines jel

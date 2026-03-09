@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS journal_entry_lines (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     journal_entry_id UUID NOT NULL REFERENCES journal_entries(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
-    description TEXT,
     debit NUMERIC(18, 2) NOT NULL DEFAULT 0,
     credit NUMERIC(18, 2) NOT NULL DEFAULT 0,
     line_order INT NOT NULL DEFAULT 0,

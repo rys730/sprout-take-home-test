@@ -48,6 +48,47 @@ definitions:
     - name
     - parent_id
     type: object
+  sprout-backend_internal_domain.CreateJournalLine:
+    properties:
+      account_id:
+        type: string
+      credit:
+        type: number
+      debit:
+        type: number
+    required:
+    - account_id
+    type: object
+  sprout-backend_internal_domain.CreateJournalRequest:
+    properties:
+      date:
+        description: YYYY-MM-DD
+        type: string
+      description:
+        type: string
+      invoice_id:
+        description: optional link to an invoice
+        type: string
+      lines:
+        items:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateJournalLine'
+        minItems: 2
+        type: array
+      status:
+        description: '"draft" or "posted"; defaults to "draft"'
+        type: string
+    required:
+    - date
+    - description
+    - lines
+    type: object
+  sprout-backend_internal_domain.ReverseJournalRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   sprout-backend_internal_domain.UpdateAccountRequest:
     properties:
       balance:
@@ -57,6 +98,18 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  sprout-backend_internal_domain.UpdateJournalRequest:
+    properties:
+      date:
+        type: string
+      description:
+        type: string
+      lines:
+        description: if provided, replaces all lines
+        items:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateJournalLine'
+        type: array
     type: object
 host: localhost:8080
 info:
@@ -373,6 +426,284 @@ paths:
       summary: Health check
       tags:
       - health
+  /journals:
+    get:
+      description: Retrieve a paginated list of journal entries with optional filtering
+      parameters:
+      - description: Filter by status (draft, posted, reversed)
+        in: query
+        name: status
+        type: string
+      - description: Filter by source (manual, payment, opening_balance, adjustment)
+        in: query
+        name: source
+        type: string
+      - description: Filter from date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter to date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []JournalEntry, count: int, total: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to retrieve journal entries
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List journal entries
+      tags:
+      - journals
+    post:
+      consumes:
+      - application/json
+      description: Create a new manual journal entry with balanced debit/credit lines.
+        Status can be "draft" or "posted".
+      parameters:
+      - description: Journal entry data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateJournalRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: JournalEntry, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new journal entry
+      tags:
+      - journals
+  /journals/{id}:
+    delete:
+      description: Delete a journal entry. Only draft entries can be deleted.
+      parameters:
+      - description: Journal Entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Journal entry deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Not a draft
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a draft journal entry
+      tags:
+      - journals
+    get:
+      description: Retrieve a single journal entry with its lines by UUID
+      parameters:
+      - description: Journal Entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: JournalEntry (with lines)'
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Journal entry not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get journal entry by ID
+      tags:
+      - journals
+    put:
+      consumes:
+      - application/json
+      description: Update the date, description, or lines of a draft journal entry.
+        Only draft entries can be edited.
+      parameters:
+      - description: Journal Entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.UpdateJournalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: JournalEntry, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error or not a draft
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a draft journal entry
+      tags:
+      - journals
+  /journals/{id}/post:
+    post:
+      description: Transition a draft journal entry to posted status. Entry must be
+        balanced and have at least 2 lines.
+      parameters:
+      - description: Journal Entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: JournalEntry, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Not a draft or unbalanced
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Post a draft journal entry
+      tags:
+      - journals
+  /journals/{id}/reverse:
+    post:
+      consumes:
+      - application/json
+      description: Create a reversing entry that swaps debit/credit of the original.
+        Original entry is marked as reversed.
+      parameters:
+      - description: Journal Entry UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reversal reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.ReverseJournalRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: JournalEntry (reversing entry), message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Not posted or missing reason
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reverse a posted journal entry
+      tags:
+      - journals
 securityDefinitions:
   BearerAuth:
     description: Enter your bearer token in the format **Bearer &lt;token&gt;**

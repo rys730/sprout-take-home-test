@@ -56,49 +56,6 @@ func (ns NullAccountType) Value() (driver.Value, error) {
 	return string(ns.AccountType), nil
 }
 
-type InvoiceStatus string
-
-const (
-	InvoiceStatusUnpaid        InvoiceStatus = "unpaid"
-	InvoiceStatusPartiallyPaid InvoiceStatus = "partially_paid"
-	InvoiceStatusPaid          InvoiceStatus = "paid"
-)
-
-func (e *InvoiceStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = InvoiceStatus(s)
-	case string:
-		*e = InvoiceStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for InvoiceStatus: %T", src)
-	}
-	return nil
-}
-
-type NullInvoiceStatus struct {
-	InvoiceStatus InvoiceStatus `json:"invoice_status"`
-	Valid         bool          `json:"valid"` // Valid is true if InvoiceStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullInvoiceStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.InvoiceStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.InvoiceStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullInvoiceStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.InvoiceStatus), nil
-}
-
 type JournalStatus string
 
 const (
@@ -142,22 +99,14 @@ func (ns NullJournalStatus) Value() (driver.Value, error) {
 	return string(ns.JournalStatus), nil
 }
 
-// Chart of Accounts - hierarchical list of financial accounts
 type Account struct {
-	ID pgtype.UUID `json:"id"`
-	// Unique account code (Nomor Akun)
-	Code string `json:"code"`
-	// Account name (Nama Akun)
-	Name string `json:"name"`
-	// Account category: asset, liability, equity, revenue, expense
-	Type AccountType `json:"type"`
-	// Parent account ID for tree structure (Akun Induk)
-	ParentID pgtype.UUID `json:"parent_id"`
-	// Hierarchy depth level (0 = root, calculated as parent level + 1)
-	Level int32 `json:"level"`
-	// System accounts cannot be deleted or edited
-	IsSystem bool `json:"is_system"`
-	// Control accounts cannot be deleted or edited
+	ID        pgtype.UUID        `json:"id"`
+	Code      string             `json:"code"`
+	Name      string             `json:"name"`
+	Type      AccountType        `json:"type"`
+	ParentID  pgtype.UUID        `json:"parent_id"`
+	Level     int32              `json:"level"`
+	IsSystem  bool               `json:"is_system"`
 	IsControl bool               `json:"is_control"`
 	IsActive  bool               `json:"is_active"`
 	CreatedBy pgtype.UUID        `json:"created_by"`
@@ -165,118 +114,41 @@ type Account struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-// Customer records for invoicing and accounts receivable
-type Customer struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	Email     pgtype.Text        `json:"email"`
-	Phone     pgtype.Text        `json:"phone"`
-	Address   pgtype.Text        `json:"address"`
-	IsActive  bool               `json:"is_active"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
-// Customer invoices for accounts receivable tracking
-type Invoice struct {
-	ID            pgtype.UUID    `json:"id"`
-	InvoiceNumber string         `json:"invoice_number"`
-	CustomerID    pgtype.UUID    `json:"customer_id"`
-	IssueDate     pgtype.Date    `json:"issue_date"`
-	DueDate       pgtype.Date    `json:"due_date"`
-	TotalAmount   pgtype.Numeric `json:"total_amount"`
-	AmountPaid    pgtype.Numeric `json:"amount_paid"`
-	// Calculated as total_amount - amount_paid
-	RemainingBalance pgtype.Numeric `json:"remaining_balance"`
-	// unpaid, partially_paid, or paid based on payment state
-	Status      InvoiceStatus      `json:"status"`
-	Description pgtype.Text        `json:"description"`
-	CreatedBy   pgtype.UUID        `json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-}
-
-// Journal entry headers (Jurnal Umum)
 type JournalEntry struct {
-	ID pgtype.UUID `json:"id"`
-	// Auto-generated journal ID (e.g., JU-2025-XXX)
-	EntryNumber string      `json:"entry_number"`
-	Date        pgtype.Date `json:"date"`
-	Description string      `json:"description"`
-	// Draft = editable, Posted = locked, Reversed = cancelled
-	Status      JournalStatus  `json:"status"`
-	TotalDebit  pgtype.Numeric `json:"total_debit"`
-	TotalCredit pgtype.Numeric `json:"total_credit"`
-	// If this entry is a reversal, references the original entry
-	ReversalOf     pgtype.UUID `json:"reversal_of"`
-	ReversalReason pgtype.Text `json:"reversal_reason"`
-	// If this entry was reversed, references the reversing entry
-	ReversedBy pgtype.UUID `json:"reversed_by"`
-	// Origin of the journal: manual or payment (auto-created)
-	Source    pgtype.Text        `json:"source"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
-// Individual debit/credit lines in a journal entry
-type JournalEntryLine struct {
-	ID             pgtype.UUID `json:"id"`
-	JournalEntryID pgtype.UUID `json:"journal_entry_id"`
-	AccountID      pgtype.UUID `json:"account_id"`
-	Description    pgtype.Text `json:"description"`
-	// Debit amount (must be >= 0)
-	Debit pgtype.Numeric `json:"debit"`
-	// Credit amount (must be >= 0)
-	Credit pgtype.Numeric `json:"credit"`
-	// Display order of lines within the journal entry
-	LineOrder int32              `json:"line_order"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-}
-
-// Customer payment records
-type Payment struct {
-	ID            pgtype.UUID    `json:"id"`
-	PaymentNumber string         `json:"payment_number"`
-	CustomerID    pgtype.UUID    `json:"customer_id"`
-	PaymentDate   pgtype.Date    `json:"payment_date"`
-	Amount        pgtype.Numeric `json:"amount"`
-	// Bank account where payment is deposited (Setor ke Akun)
-	DepositToAccountID pgtype.UUID `json:"deposit_to_account_id"`
-	// Auto-generated journal: Debit Bank, Credit Piutang Usaha
-	JournalEntryID pgtype.UUID        `json:"journal_entry_id"`
-	Notes          pgtype.Text        `json:"notes"`
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	InvoiceNumber  pgtype.Text        `json:"invoice_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
-// Maps payment amounts to specific invoices
-type PaymentAllocation struct {
-	ID        pgtype.UUID `json:"id"`
-	PaymentID pgtype.UUID `json:"payment_id"`
-	InvoiceID pgtype.UUID `json:"invoice_id"`
-	// Portion of the payment applied to this invoice
-	Amount    pgtype.Numeric     `json:"amount"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+type JournalEntryLine struct {
+	ID             pgtype.UUID        `json:"id"`
+	JournalEntryID pgtype.UUID        `json:"journal_entry_id"`
+	AccountID      pgtype.UUID        `json:"account_id"`
+	Debit          pgtype.Numeric     `json:"debit"`
+	Credit         pgtype.Numeric     `json:"credit"`
+	LineOrder      int32              `json:"line_order"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
-// User accounts table storing authentication and profile information
 type User struct {
-	// Unique identifier for the user
-	ID pgtype.UUID `json:"id"`
-	// User email address, used for login
-	Email string `json:"email"`
-	// Hashed password using bcrypt
-	PasswordHash string `json:"password_hash"`
-	// User full name
-	FullName pgtype.Text `json:"full_name"`
-	// Array of role strings for authorization
-	Roles []string `json:"roles"`
-	// Flag indicating if the account is active
-	IsActive bool `json:"is_active"`
-	// Timestamp when the user was created
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	// Timestamp when the user was last updated
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID           pgtype.UUID        `json:"id"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	FullName     pgtype.Text        `json:"full_name"`
+	Roles        []string           `json:"roles"`
+	IsActive     bool               `json:"is_active"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }

@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"math/big"
-	"time"
 
 	"sprout-backend/db/queries"
 	"sprout-backend/internal/domain"
+	"sprout-backend/internal/utils"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5" // utils
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,113 +27,40 @@ func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// pgtype ↔ domain conversion helpers
-// ---------------------------------------------------------------------------
-
-func parseUUID(s string) pgtype.UUID {
-	var u pgtype.UUID
-	_ = u.Scan(s)
-	return u
-}
-
-func uuidToString(u pgtype.UUID) string {
-	if !u.Valid {
-		return ""
-	}
-	return fmt.Sprintf("%x-%x-%x-%x-%x", u.Bytes[0:4], u.Bytes[4:6], u.Bytes[6:8], u.Bytes[8:10], u.Bytes[10:16])
-}
-
-func uuidToStringPtr(u pgtype.UUID) *string {
-	if !u.Valid {
-		return nil
-	}
-	s := uuidToString(u)
-	return &s
-}
-
-func stringPtrToUUID(s *string) pgtype.UUID {
-	if s == nil {
-		return pgtype.UUID{Valid: false}
-	}
-	return parseUUID(*s)
-}
-
-func timestamptzToTime(ts pgtype.Timestamptz) time.Time {
-	if !ts.Valid {
-		return time.Time{}
-	}
-	return ts.Time
-}
-
-func numericToFloat64(n pgtype.Numeric) float64 {
-	if !n.Valid {
-		return 0
-	}
-	f, _ := n.Float64Value()
-	if !f.Valid {
-		return 0
-	}
-	return f.Float64
-}
-
-func float64ToNumeric(f float64) pgtype.Numeric {
-	// Convert to an integer-based representation to avoid floating-point issues.
-	// We store 2 decimal places, so multiply by 100.
-	scaled := int64(math.Round(f * 100))
-	return pgtype.Numeric{
-		Int:   big.NewInt(scaled),
-		Exp:   -2,
-		Valid: true,
-	}
-}
-
-func textFromString(s string) pgtype.Text {
-	if s == "" {
-		return pgtype.Text{Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
-}
-
-func currentDate() pgtype.Date {
-	now := time.Now()
-	return pgtype.Date{Time: now, Valid: true}
-}
-
 // accountToDomain converts a sqlc Account model to domain.Account.
 func accountToDomain(a queries.Account) domain.Account {
 	return domain.Account{
-		ID:        uuidToString(a.ID),
+		ID:        utils.UUIDToString(a.ID),
 		Code:      a.Code,
 		Name:      a.Name,
 		Type:      domain.AccountType(a.Type),
-		ParentID:  uuidToStringPtr(a.ParentID),
+		ParentID:  utils.UUIDToStringPtr(a.ParentID),
 		Level:     int(a.Level),
 		IsSystem:  a.IsSystem,
 		IsControl: a.IsControl,
 		IsActive:  a.IsActive,
-		CreatedBy: uuidToStringPtr(a.CreatedBy),
-		CreatedAt: timestamptzToTime(a.CreatedAt),
-		UpdatedAt: timestamptzToTime(a.UpdatedAt),
+		CreatedBy: utils.UUIDToStringPtr(a.CreatedBy),
+		CreatedAt: utils.TimestamptzToTime(a.CreatedAt),
+		UpdatedAt: utils.TimestamptzToTime(a.UpdatedAt),
 	}
 }
 
 // accountWithBalanceToDomain converts a sqlc GetAllAccountsWithBalancesRow to domain.Account.
 func accountWithBalanceToDomain(a queries.GetAllAccountsWithBalancesRow) domain.Account {
 	return domain.Account{
-		ID:        uuidToString(a.ID),
+		ID:        utils.UUIDToString(a.ID),
 		Code:      a.Code,
 		Name:      a.Name,
 		Type:      domain.AccountType(a.Type),
-		ParentID:  uuidToStringPtr(a.ParentID),
+		ParentID:  utils.UUIDToStringPtr(a.ParentID),
 		Level:     int(a.Level),
 		IsSystem:  a.IsSystem,
 		IsControl: a.IsControl,
 		IsActive:  a.IsActive,
-		Balance:   numericToFloat64(a.Balance),
-		CreatedBy: uuidToStringPtr(a.CreatedBy),
-		CreatedAt: timestamptzToTime(a.CreatedAt),
-		UpdatedAt: timestamptzToTime(a.UpdatedAt),
+		Balance:   utils.NumericToFloat64(a.Balance),
+		CreatedBy: utils.UUIDToStringPtr(a.CreatedBy),
+		CreatedAt: utils.TimestamptzToTime(a.CreatedAt),
+		UpdatedAt: utils.TimestamptzToTime(a.UpdatedAt),
 	}
 }
 
@@ -167,7 +93,7 @@ func (r *AccountRepository) GetAllWithBalances(ctx context.Context) ([]domain.Ac
 }
 
 func (r *AccountRepository) GetByID(ctx context.Context, id string) (*domain.Account, error) {
-	row, err := r.q.GetAccountByID(ctx, parseUUID(id))
+	row, err := r.q.GetAccountByID(ctx, utils.ParseUUID(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -191,7 +117,7 @@ func (r *AccountRepository) GetByCode(ctx context.Context, code string) (*domain
 }
 
 func (r *AccountRepository) GetChildren(ctx context.Context, parentID string) ([]domain.Account, error) {
-	rows, err := r.q.GetAccountChildren(ctx, parseUUID(parentID))
+	rows, err := r.q.GetAccountChildren(ctx, utils.ParseUUID(parentID))
 	if err != nil {
 		return nil, fmt.Errorf("query children: %w", err)
 	}
@@ -203,7 +129,7 @@ func (r *AccountRepository) GetChildren(ctx context.Context, parentID string) ([
 }
 
 func (r *AccountRepository) HasChildren(ctx context.Context, id string) (bool, error) {
-	has, err := r.q.HasAccountChildren(ctx, parseUUID(id))
+	has, err := r.q.HasAccountChildren(ctx, utils.ParseUUID(id))
 	if err != nil {
 		return false, fmt.Errorf("check children: %w", err)
 	}
@@ -211,7 +137,7 @@ func (r *AccountRepository) HasChildren(ctx context.Context, id string) (bool, e
 }
 
 func (r *AccountRepository) IsReferencedInJournalLines(ctx context.Context, id string) (bool, error) {
-	ref, err := r.q.IsAccountReferencedInJournalLines(ctx, parseUUID(id))
+	ref, err := r.q.IsAccountReferencedInJournalLines(ctx, utils.ParseUUID(id))
 	if err != nil {
 		return false, fmt.Errorf("check journal references: %w", err)
 	}
@@ -223,12 +149,12 @@ func (r *AccountRepository) Create(ctx context.Context, account *domain.Account)
 		Code:      account.Code,
 		Name:      account.Name,
 		Type:      queries.AccountType(account.Type),
-		ParentID:  stringPtrToUUID(account.ParentID),
+		ParentID:  utils.StringPtrToUUID(account.ParentID),
 		Level:     int32(account.Level),
 		IsSystem:  account.IsSystem,
 		IsControl: account.IsControl,
 		IsActive:  account.IsActive,
-		CreatedBy: stringPtrToUUID(account.CreatedBy),
+		CreatedBy: utils.StringPtrToUUID(account.CreatedBy),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create account: %w", err)
@@ -239,7 +165,7 @@ func (r *AccountRepository) Create(ctx context.Context, account *domain.Account)
 
 func (r *AccountRepository) Update(ctx context.Context, account *domain.Account) (*domain.Account, error) {
 	row, err := r.q.UpdateAccount(ctx, queries.UpdateAccountParams{
-		ID:   parseUUID(account.ID),
+		ID:   utils.ParseUUID(account.ID),
 		Code: account.Code,
 		Name: account.Name,
 	})
@@ -254,7 +180,7 @@ func (r *AccountRepository) Update(ctx context.Context, account *domain.Account)
 }
 
 func (r *AccountRepository) Delete(ctx context.Context, id string) error {
-	err := r.q.DeleteAccount(ctx, parseUUID(id))
+	err := r.q.DeleteAccount(ctx, utils.ParseUUID(id))
 	if err != nil {
 		return fmt.Errorf("delete account: %w", err)
 	}
@@ -263,12 +189,12 @@ func (r *AccountRepository) Delete(ctx context.Context, id string) error {
 
 func (r *AccountRepository) Search(ctx context.Context, filter domain.AccountFilter) ([]domain.Account, error) {
 	rows, err := r.q.SearchAccounts(ctx, queries.SearchAccountsParams{
-		Search: textFromString(filter.Search),
+		Search: utils.TextFromString(filter.Search),
 		AccountType: queries.NullAccountType{
 			AccountType: queries.AccountType(filter.Type),
 			Valid:       filter.Type != "",
 		},
-		ParentID: stringPtrToUUID(func() *string {
+		ParentID: utils.StringPtrToUUID(func() *string {
 			if filter.ParentID == "" {
 				return nil
 			}
@@ -314,20 +240,20 @@ func (r *AccountRepository) CreateOpeningBalance(ctx context.Context, accountID 
 
 	entry, err := qtx.CreateJournalEntry(ctx, queries.CreateJournalEntryParams{
 		EntryNumber: entryNumber,
-		Date:        currentDate(),
+		Date:        utils.CurrentDate(),
 		Description: "Opening Balance",
 		Source:      pgtype.Text{String: "opening_balance", Valid: true},
 		Status:      queries.JournalStatusPosted,
-		CreatedBy:   parseUUID(createdBy),
+		CreatedBy:   utils.ParseUUID(createdBy),
 	})
 	if err != nil {
 		return fmt.Errorf("insert journal entry: %w", err)
 	}
 
 	// 3. Determine debit/credit accounts based on account type
-	acctUUID := parseUUID(accountID)
-	amountNum := float64ToNumeric(amount)
-	zeroNum := float64ToNumeric(0)
+	acctUUID := utils.ParseUUID(accountID)
+	amountNum := utils.Float64ToNumeric(amount)
+	zeroNum := utils.Float64ToNumeric(0)
 
 	var debitAcctID, creditAcctID pgtype.UUID
 	switch accountType {
@@ -343,7 +269,6 @@ func (r *AccountRepository) CreateOpeningBalance(ctx context.Context, accountID 
 	_, err = qtx.CreateJournalEntryLine(ctx, queries.CreateJournalEntryLineParams{
 		JournalEntryID: entry.ID,
 		AccountID:      debitAcctID,
-		Description:    pgtype.Text{String: "Opening Balance", Valid: true},
 		Debit:          amountNum,
 		Credit:         zeroNum,
 		LineOrder:      1,
@@ -356,7 +281,6 @@ func (r *AccountRepository) CreateOpeningBalance(ctx context.Context, accountID 
 	_, err = qtx.CreateJournalEntryLine(ctx, queries.CreateJournalEntryLineParams{
 		JournalEntryID: entry.ID,
 		AccountID:      creditAcctID,
-		Description:    pgtype.Text{String: "Opening Balance", Valid: true},
 		Debit:          zeroNum,
 		Credit:         amountNum,
 		LineOrder:      2,
@@ -408,11 +332,11 @@ func (r *AccountRepository) AdjustBalance(ctx context.Context, accountID string,
 
 	entry, err := qtx.CreateJournalEntry(ctx, queries.CreateJournalEntryParams{
 		EntryNumber: entryNumber,
-		Date:        currentDate(),
+		Date:        utils.CurrentDate(),
 		Description: "Balance Adjustment",
 		Source:      pgtype.Text{String: "adjustment", Valid: true},
 		Status:      queries.JournalStatusPosted,
-		CreatedBy:   parseUUID(createdBy),
+		CreatedBy:   utils.ParseUUID(createdBy),
 	})
 	if err != nil {
 		return fmt.Errorf("insert journal entry: %w", err)
@@ -444,15 +368,14 @@ func (r *AccountRepository) AdjustBalance(ctx context.Context, accountID string,
 		}
 	}
 
-	acctUUID := parseUUID(accountID)
+	acctUUID := utils.ParseUUID(accountID)
 
 	// Account line
 	_, err = qtx.CreateJournalEntryLine(ctx, queries.CreateJournalEntryLineParams{
 		JournalEntryID: entry.ID,
 		AccountID:      acctUUID,
-		Description:    pgtype.Text{String: "Balance Adjustment", Valid: true},
-		Debit:          float64ToNumeric(acctDebit),
-		Credit:         float64ToNumeric(acctCredit),
+		Debit:          utils.Float64ToNumeric(acctDebit),
+		Credit:         utils.Float64ToNumeric(acctCredit),
 		LineOrder:      1,
 	})
 	if err != nil {
@@ -463,9 +386,8 @@ func (r *AccountRepository) AdjustBalance(ctx context.Context, accountID string,
 	_, err = qtx.CreateJournalEntryLine(ctx, queries.CreateJournalEntryLineParams{
 		JournalEntryID: entry.ID,
 		AccountID:      contraID,
-		Description:    pgtype.Text{String: "Balance Adjustment", Valid: true},
-		Debit:          float64ToNumeric(contraDebit),
-		Credit:         float64ToNumeric(contraCredit),
+		Debit:          utils.Float64ToNumeric(contraDebit),
+		Credit:         utils.Float64ToNumeric(contraCredit),
 		LineOrder:      2,
 	})
 	if err != nil {

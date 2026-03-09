@@ -55,7 +55,24 @@ type CreateJournalEntryParams struct {
 	CreatedBy   pgtype.UUID   `json:"created_by"`
 }
 
-func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntryParams) (JournalEntry, error) {
+type CreateJournalEntryRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntryParams) (CreateJournalEntryRow, error) {
 	row := q.db.QueryRow(ctx, createJournalEntry,
 		arg.EntryNumber,
 		arg.Date,
@@ -64,7 +81,7 @@ func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntry
 		arg.Status,
 		arg.CreatedBy,
 	)
-	var i JournalEntry
+	var i CreateJournalEntryRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -102,7 +119,24 @@ type CreateReversalJournalEntryParams struct {
 	CreatedBy      pgtype.UUID `json:"created_by"`
 }
 
-func (q *Queries) CreateReversalJournalEntry(ctx context.Context, arg CreateReversalJournalEntryParams) (JournalEntry, error) {
+type CreateReversalJournalEntryRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateReversalJournalEntry(ctx context.Context, arg CreateReversalJournalEntryParams) (CreateReversalJournalEntryRow, error) {
 	row := q.db.QueryRow(ctx, createReversalJournalEntry,
 		arg.EntryNumber,
 		arg.Date,
@@ -112,7 +146,7 @@ func (q *Queries) CreateReversalJournalEntry(ctx context.Context, arg CreateReve
 		arg.ReversalReason,
 		arg.CreatedBy,
 	)
-	var i JournalEntry
+	var i CreateReversalJournalEntryRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -165,9 +199,26 @@ FROM journal_entries
 WHERE entry_number = $1
 `
 
-func (q *Queries) GetJournalEntryByEntryNumber(ctx context.Context, entryNumber string) (JournalEntry, error) {
+type GetJournalEntryByEntryNumberRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetJournalEntryByEntryNumber(ctx context.Context, entryNumber string) (GetJournalEntryByEntryNumberRow, error) {
 	row := q.db.QueryRow(ctx, getJournalEntryByEntryNumber, entryNumber)
-	var i JournalEntry
+	var i GetJournalEntryByEntryNumberRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -196,12 +247,29 @@ FROM journal_entries
 WHERE id = $1
 `
 
+type GetJournalEntryByIDRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 // ============================================================================
 // JOURNAL ENTRIES (Jurnal Umum) - Headers
 // ============================================================================
-func (q *Queries) GetJournalEntryByID(ctx context.Context, id pgtype.UUID) (JournalEntry, error) {
+func (q *Queries) GetJournalEntryByID(ctx context.Context, id pgtype.UUID) (GetJournalEntryByIDRow, error) {
 	row := q.db.QueryRow(ctx, getJournalEntryByID, id)
-	var i JournalEntry
+	var i GetJournalEntryByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -243,7 +311,24 @@ type ListJournalEntriesParams struct {
 	EndDate   pgtype.Date       `json:"end_date"`
 }
 
-func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntriesParams) ([]JournalEntry, error) {
+type ListJournalEntriesRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntriesParams) ([]ListJournalEntriesRow, error) {
 	rows, err := q.db.Query(ctx, listJournalEntries,
 		arg.Limit,
 		arg.Offset,
@@ -256,9 +341,9 @@ func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntries
 		return nil, err
 	}
 	defer rows.Close()
-	var items []JournalEntry
+	var items []ListJournalEntriesRow
 	for rows.Next() {
-		var i JournalEntry
+		var i ListJournalEntriesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.EntryNumber,
@@ -303,9 +388,26 @@ type PostJournalEntryParams struct {
 	TotalCredit pgtype.Numeric `json:"total_credit"`
 }
 
-func (q *Queries) PostJournalEntry(ctx context.Context, arg PostJournalEntryParams) (JournalEntry, error) {
+type PostJournalEntryRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) PostJournalEntry(ctx context.Context, arg PostJournalEntryParams) (PostJournalEntryRow, error) {
 	row := q.db.QueryRow(ctx, postJournalEntry, arg.ID, arg.TotalDebit, arg.TotalCredit)
-	var i JournalEntry
+	var i PostJournalEntryRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -341,9 +443,26 @@ type ReverseJournalEntryParams struct {
 	ReversedBy pgtype.UUID `json:"reversed_by"`
 }
 
-func (q *Queries) ReverseJournalEntry(ctx context.Context, arg ReverseJournalEntryParams) (JournalEntry, error) {
+type ReverseJournalEntryRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ReverseJournalEntry(ctx context.Context, arg ReverseJournalEntryParams) (ReverseJournalEntryRow, error) {
 	row := q.db.QueryRow(ctx, reverseJournalEntry, arg.ID, arg.ReversedBy)
-	var i JournalEntry
+	var i ReverseJournalEntryRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,
@@ -378,9 +497,26 @@ type UpdateJournalEntryParams struct {
 	Date        pgtype.Date `json:"date"`
 }
 
-func (q *Queries) UpdateJournalEntry(ctx context.Context, arg UpdateJournalEntryParams) (JournalEntry, error) {
+type UpdateJournalEntryRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateJournalEntry(ctx context.Context, arg UpdateJournalEntryParams) (UpdateJournalEntryRow, error) {
 	row := q.db.QueryRow(ctx, updateJournalEntry, arg.ID, arg.Description, arg.Date)
-	var i JournalEntry
+	var i UpdateJournalEntryRow
 	err := row.Scan(
 		&i.ID,
 		&i.EntryNumber,

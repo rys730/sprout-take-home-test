@@ -12,15 +12,14 @@ import (
 )
 
 const createJournalEntryLine = `-- name: CreateJournalEntryLine :one
-INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, debit, credit, line_order)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, journal_entry_id, account_id, description, debit, credit, line_order, created_at
+INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, line_order)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, journal_entry_id, account_id, debit, credit, line_order, created_at
 `
 
 type CreateJournalEntryLineParams struct {
 	JournalEntryID pgtype.UUID    `json:"journal_entry_id"`
 	AccountID      pgtype.UUID    `json:"account_id"`
-	Description    pgtype.Text    `json:"description"`
 	Debit          pgtype.Numeric `json:"debit"`
 	Credit         pgtype.Numeric `json:"credit"`
 	LineOrder      int32          `json:"line_order"`
@@ -30,7 +29,6 @@ func (q *Queries) CreateJournalEntryLine(ctx context.Context, arg CreateJournalE
 	row := q.db.QueryRow(ctx, createJournalEntryLine,
 		arg.JournalEntryID,
 		arg.AccountID,
-		arg.Description,
 		arg.Debit,
 		arg.Credit,
 		arg.LineOrder,
@@ -40,7 +38,6 @@ func (q *Queries) CreateJournalEntryLine(ctx context.Context, arg CreateJournalE
 		&i.ID,
 		&i.JournalEntryID,
 		&i.AccountID,
-		&i.Description,
 		&i.Debit,
 		&i.Credit,
 		&i.LineOrder,
@@ -59,7 +56,7 @@ func (q *Queries) DeleteJournalEntryLinesByEntryID(ctx context.Context, journalE
 }
 
 const getAccountLedger = `-- name: GetAccountLedger :many
-SELECT jel.id, jel.journal_entry_id, jel.account_id, jel.description,
+SELECT jel.id, jel.journal_entry_id, jel.account_id,
        jel.debit, jel.credit, jel.line_order, jel.created_at,
        je.entry_number, je.date AS entry_date, je.status AS entry_status
 FROM journal_entry_lines jel
@@ -81,7 +78,6 @@ type GetAccountLedgerRow struct {
 	ID             pgtype.UUID        `json:"id"`
 	JournalEntryID pgtype.UUID        `json:"journal_entry_id"`
 	AccountID      pgtype.UUID        `json:"account_id"`
-	Description    pgtype.Text        `json:"description"`
 	Debit          pgtype.Numeric     `json:"debit"`
 	Credit         pgtype.Numeric     `json:"credit"`
 	LineOrder      int32              `json:"line_order"`
@@ -104,7 +100,6 @@ func (q *Queries) GetAccountLedger(ctx context.Context, arg GetAccountLedgerPara
 			&i.ID,
 			&i.JournalEntryID,
 			&i.AccountID,
-			&i.Description,
 			&i.Debit,
 			&i.Credit,
 			&i.LineOrder,
@@ -125,7 +120,7 @@ func (q *Queries) GetAccountLedger(ctx context.Context, arg GetAccountLedgerPara
 
 const getJournalEntryLinesByEntryID = `-- name: GetJournalEntryLinesByEntryID :many
 
-SELECT jel.id, jel.journal_entry_id, jel.account_id, jel.description,
+SELECT jel.id, jel.journal_entry_id, jel.account_id,
        jel.debit, jel.credit, jel.line_order, jel.created_at,
        a.code AS account_code, a.name AS account_name
 FROM journal_entry_lines jel
@@ -138,7 +133,6 @@ type GetJournalEntryLinesByEntryIDRow struct {
 	ID             pgtype.UUID        `json:"id"`
 	JournalEntryID pgtype.UUID        `json:"journal_entry_id"`
 	AccountID      pgtype.UUID        `json:"account_id"`
-	Description    pgtype.Text        `json:"description"`
 	Debit          pgtype.Numeric     `json:"debit"`
 	Credit         pgtype.Numeric     `json:"credit"`
 	LineOrder      int32              `json:"line_order"`
@@ -163,7 +157,6 @@ func (q *Queries) GetJournalEntryLinesByEntryID(ctx context.Context, journalEntr
 			&i.ID,
 			&i.JournalEntryID,
 			&i.AccountID,
-			&i.Description,
 			&i.Debit,
 			&i.Credit,
 			&i.LineOrder,
