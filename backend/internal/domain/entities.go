@@ -20,23 +20,3 @@ type Product struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
-
-type UserUseCase interface {
-	// Define user use case methods
-	// Example:
-	// CreateUser(ctx context.Context, user *User) error
-	// GetUser(ctx context.Context, id string) (*User, error)
-	// GetUserByEmail(ctx context.Context, email string) (*User, error)
-	// UpdateUser(ctx context.Context, user *User) error
-	// DeleteUser(ctx context.Context, id string) error
-}
-
-type ProductUseCase interface {
-	// Define product use case methods
-	// Example:
-	// CreateProduct(ctx context.Context, product *Product) error
-	// GetProduct(ctx context.Context, id string) (*Product, error)
-	// ListProducts(ctx context.Context, limit, offset int) ([]*Product, error)
-	// UpdateProduct(ctx context.Context, product *Product) error
-	// DeleteProduct(ctx context.Context, id string) error
-}

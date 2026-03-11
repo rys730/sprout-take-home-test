@@ -82,6 +82,50 @@ definitions:
     - description
     - lines
     type: object
+  sprout-backend_internal_domain.CreatePaymentRequest:
+    properties:
+      allocations:
+        items:
+          $ref: '#/definitions/sprout-backend_internal_domain.PaymentAllocationLine'
+        minItems: 1
+        type: array
+      amount:
+        type: number
+      customer_id:
+        type: string
+      deposit_to_account_id:
+        type: string
+      notes:
+        type: string
+      payment_date:
+        description: YYYY-MM-DD
+        type: string
+    required:
+    - allocations
+    - amount
+    - customer_id
+    - deposit_to_account_id
+    - payment_date
+    type: object
+  sprout-backend_internal_domain.PaymentAllocationLine:
+    properties:
+      amount:
+        type: number
+      invoice_id:
+        type: string
+    required:
+    - amount
+    - invoice_id
+    type: object
+  sprout-backend_internal_domain.ReceivablesSummary:
+    properties:
+      total_outstanding:
+        description: Total Piutang
+        type: number
+      total_overdue:
+        description: Total Jatuh Tempo
+        type: number
+    type: object
   sprout-backend_internal_domain.ReverseJournalRequest:
     properties:
       reason:
@@ -704,6 +748,123 @@ paths:
       summary: Reverse a posted journal entry
       tags:
       - journals
+  /payments:
+    get:
+      description: Retrieve a paginated list of payments with optional filtering by
+        customer
+      parameters:
+      - description: Filter by customer UUID
+        in: query
+        name: customer_id
+        type: string
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []Payment, count: int, total: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve payments
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List payments
+      tags:
+      - payments
+    post:
+      consumes:
+      - application/json
+      description: Record a lump-sum payment from a customer, allocate to invoices,
+        and auto-create journal entry (Debit Bank, Credit Piutang Usaha 112.000)
+      parameters:
+      - description: Payment data with allocations
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: Payment, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Record a customer payment
+      tags:
+      - payments
+  /payments/{id}:
+    get:
+      description: Retrieve a single payment with its allocations by UUID
+      parameters:
+      - description: Payment UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: Payment (with allocations)'
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Payment not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get payment by ID
+      tags:
+      - payments
+  /payments/summary:
+    get:
+      description: Returns total outstanding receivables (Total Piutang) and total
+        overdue receivables (Total Jatuh Tempo)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Receivables summary
+          schema:
+            $ref: '#/definitions/sprout-backend_internal_domain.ReceivablesSummary'
+        "500":
+          description: Failed to retrieve receivables summary
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get receivables summary
+      tags:
+      - payments
 securityDefinitions:
   BearerAuth:
     description: Enter your bearer token in the format **Bearer &lt;token&gt;**

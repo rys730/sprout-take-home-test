@@ -907,6 +907,186 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/payments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a paginated list of payments with optional filtering by customer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "List payments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by customer UUID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: []Payment, count: int, total: int",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve payments",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Record a lump-sum payment from a customer, allocate to invoices, and auto-create journal entry (Debit Bank, Credit Piutang Usaha 112.000)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Record a customer payment",
+                "parameters": [
+                    {
+                        "description": "Payment data with allocations",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sprout-backend_internal_domain.CreatePaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "data: Payment, message: string",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns total outstanding receivables (Total Piutang) and total overdue receivables (Total Jatuh Tempo)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get receivables summary",
+                "responses": {
+                    "200": {
+                        "description": "Receivables summary",
+                        "schema": {
+                            "$ref": "#/definitions/sprout-backend_internal_domain.ReceivablesSummary"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve receivables summary",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a single payment with its allocations by UUID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get payment by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payment UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: Payment (with allocations)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Payment not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1028,6 +1208,69 @@ const docTemplate = `{
                 "status": {
                     "description": "\"draft\" or \"posted\"; defaults to \"draft\"",
                     "type": "string"
+                }
+            }
+        },
+        "sprout-backend_internal_domain.CreatePaymentRequest": {
+            "type": "object",
+            "required": [
+                "allocations",
+                "amount",
+                "customer_id",
+                "deposit_to_account_id",
+                "payment_date"
+            ],
+            "properties": {
+                "allocations": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/sprout-backend_internal_domain.PaymentAllocationLine"
+                    }
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "deposit_to_account_id": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "payment_date": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                }
+            }
+        },
+        "sprout-backend_internal_domain.PaymentAllocationLine": {
+            "type": "object",
+            "required": [
+                "amount",
+                "invoice_id"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "invoice_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "sprout-backend_internal_domain.ReceivablesSummary": {
+            "type": "object",
+            "properties": {
+                "total_outstanding": {
+                    "description": "Total Piutang",
+                    "type": "number"
+                },
+                "total_overdue": {
+                    "description": "Total Jatuh Tempo",
+                    "type": "number"
                 }
             }
         },
