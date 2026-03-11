@@ -72,10 +72,14 @@ func main() {
 	// Initialize repositories
 	accountRepo := repository.NewAccountRepository(db.GetPool())
 	journalRepo := repository.NewJournalRepository(db.GetPool())
+	customerRepo := repository.NewCustomerRepository(db.GetPool())
+	invoiceRepo := repository.NewInvoiceRepository(db.GetPool())
+	paymentRepo := repository.NewPaymentRepository(db.GetPool())
 
 	// Initialize use cases
 	accountUseCase := usecase.NewAccountUseCase(accountRepo)
 	journalUseCase := usecase.NewJournalUseCase(journalRepo)
+	paymentUseCase := usecase.NewPaymentUseCase(paymentRepo, invoiceRepo, customerRepo)
 
 	e := echo.New()
 
@@ -91,6 +95,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(jwtManager)
 	accountHandler := handler.NewAccountHandler(accountUseCase)
 	journalHandler := handler.NewJournalHandler(journalUseCase)
+	paymentHandler := handler.NewPaymentHandler(paymentUseCase)
 	api := e.Group("/api")
 
 	v1 := api.Group("/v1")
@@ -132,6 +137,13 @@ func main() {
 	journal.POST("/:id/post", journalHandler.PostJournal)
 	journal.POST("/:id/reverse", journalHandler.ReverseJournal)
 	journal.DELETE("/:id", journalHandler.DeleteJournal)
+
+	// Penagihan / AR Management routes
+	payment := v1.Group("/payments")
+	payment.GET("/summary", paymentHandler.GetReceivablesSummary)
+	payment.GET("", paymentHandler.ListPayments)
+	payment.GET("/:id", paymentHandler.GetPayment)
+	payment.POST("", paymentHandler.RecordPayment)
 
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	logger.Infof("Server starting on %s", addr)

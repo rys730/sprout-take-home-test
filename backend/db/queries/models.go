@@ -56,6 +56,49 @@ func (ns NullAccountType) Value() (driver.Value, error) {
 	return string(ns.AccountType), nil
 }
 
+type InvoiceStatus string
+
+const (
+	InvoiceStatusUnpaid        InvoiceStatus = "unpaid"
+	InvoiceStatusPartiallyPaid InvoiceStatus = "partially_paid"
+	InvoiceStatusPaid          InvoiceStatus = "paid"
+)
+
+func (e *InvoiceStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = InvoiceStatus(s)
+	case string:
+		*e = InvoiceStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for InvoiceStatus: %T", src)
+	}
+	return nil
+}
+
+type NullInvoiceStatus struct {
+	InvoiceStatus InvoiceStatus `json:"invoice_status"`
+	Valid         bool          `json:"valid"` // Valid is true if InvoiceStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullInvoiceStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.InvoiceStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.InvoiceStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullInvoiceStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.InvoiceStatus), nil
+}
+
 type JournalStatus string
 
 const (
@@ -114,6 +157,33 @@ type Account struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Customer struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Email     pgtype.Text        `json:"email"`
+	Phone     pgtype.Text        `json:"phone"`
+	Address   pgtype.Text        `json:"address"`
+	IsActive  bool               `json:"is_active"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Invoice struct {
+	ID            pgtype.UUID        `json:"id"`
+	InvoiceNumber string             `json:"invoice_number"`
+	CustomerID    pgtype.UUID        `json:"customer_id"`
+	IssueDate     pgtype.Date        `json:"issue_date"`
+	DueDate       pgtype.Date        `json:"due_date"`
+	TotalAmount   pgtype.Numeric     `json:"total_amount"`
+	AmountPaid    pgtype.Numeric     `json:"amount_paid"`
+	Status        InvoiceStatus      `json:"status"`
+	Description   pgtype.Text        `json:"description"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type JournalEntry struct {
 	ID             pgtype.UUID        `json:"id"`
 	EntryNumber    string             `json:"entry_number"`
@@ -140,6 +210,28 @@ type JournalEntryLine struct {
 	Credit         pgtype.Numeric     `json:"credit"`
 	LineOrder      int32              `json:"line_order"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type Payment struct {
+	ID                 pgtype.UUID        `json:"id"`
+	PaymentNumber      string             `json:"payment_number"`
+	CustomerID         pgtype.UUID        `json:"customer_id"`
+	PaymentDate        pgtype.Date        `json:"payment_date"`
+	Amount             pgtype.Numeric     `json:"amount"`
+	DepositToAccountID pgtype.UUID        `json:"deposit_to_account_id"`
+	JournalEntryID     pgtype.UUID        `json:"journal_entry_id"`
+	Notes              pgtype.Text        `json:"notes"`
+	CreatedBy          pgtype.UUID        `json:"created_by"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PaymentAllocation struct {
+	ID        pgtype.UUID        `json:"id"`
+	PaymentID pgtype.UUID        `json:"payment_id"`
+	InvoiceID pgtype.UUID        `json:"invoice_id"`
+	Amount    pgtype.Numeric     `json:"amount"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {
