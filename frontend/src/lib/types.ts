@@ -37,6 +37,7 @@ export interface CreateAccountRequest {
 export interface UpdateAccountRequest {
   code?: string;
   name?: string;
+  parent_id?: string;
   balance?: number;
 }
 

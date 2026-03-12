@@ -26,8 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
-import type { AccountTreeNode } from "@/lib/types";
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Lock, TriangleAlert } from "lucide-react";
+import type { AccountTreeNode, Account } from "@/lib/types";
 import type { AccountsController } from "@/controllers/accounts-controller";
 import { flattenChildren } from "@/controllers/accounts-controller";
 
@@ -48,10 +48,14 @@ function AccountTable({
   parent,
   isTableExpanded,
   onToggleTable,
+  onEdit,
+  onDelete,
 }: {
   parent: AccountTreeNode;
   isTableExpanded: boolean;
   onToggleTable: () => void;
+  onEdit: (account: Account) => void;
+  onDelete: (account: Account) => void;
 }) {
   const children = parent.children ?? [];
   // Flatten all descendants — child rows are not expandable/collapsible
@@ -107,31 +111,59 @@ function AccountTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map(({ node, depth, hasChildren }) => (
-                  <TableRow
-                    key={node.account.id}
-                    className="hover:bg-muted/50"
-                  >
-                    <TableCell className="w-50 font-mono text-sm">
-                      <div style={{ paddingLeft: `${depth * 1.5}rem` }}>
-                        {node.account.code}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className="flex items-center gap-1"
-                        style={{ paddingLeft: `${depth * 1.5}rem` }}
-                      >
-                        <span className={hasChildren ? "font-medium" : ""}>
-                          {node.account.name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(node.account.balance)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                rows.map(({ node, hasChildren, isLast, ancestorIsLast }) => {
+                  const acct = node.account;
+                  const isProtected = acct.is_system || acct.is_control;
+
+                  return (
+                    <TableRow
+                      key={acct.id}
+                      className="hover:bg-muted/50"
+                    >
+                      <TableCell className="w-50 font-mono text-sm">
+                        <div className="flex items-center">
+                          {ancestorIsLast.map((_, i) => (
+                            <span key={i} className="inline-block w-6" />
+                          ))}
+                          <span className="inline-block w-6 text-center text-muted-foreground/60 select-none">
+                            {isLast ? "└─" : "├─"}
+                          </span>
+                          <span>{acct.code}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className={hasChildren ? "font-medium" : ""}>
+                            {acct.name}
+                          </span>
+                          {isProtected ? (
+                            <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => onEdit(acct)}
+                                className="rounded p-1 hover:bg-muted"
+                                title="Edit akun"
+                              >
+                                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => onDelete(acct)}
+                                className="rounded p-1 hover:bg-destructive/10"
+                                title="Hapus akun"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(acct.balance)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           )}
@@ -282,8 +314,146 @@ export function AccountsView(ctrl: AccountsController) {
             parent={parent}
             isTableExpanded={ctrl.expandedTableIds.has(parent.account.id)}
             onToggleTable={() => ctrl.toggleTable(parent.account.id)}
+            onEdit={ctrl.openEdit}
+            onDelete={ctrl.openDelete}
           />
         ))}
+
+      {/* ---- Edit Account Dialog ---- */}
+      <Dialog open={ctrl.isEditOpen} onOpenChange={ctrl.setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Akun</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name"><span className="text-destructive">*</span> Nama Akun</Label>
+              <Input
+                id="edit-name"
+                placeholder="Contoh: Pemasukan"
+                value={ctrl.editForm.name}
+                onChange={(e) => ctrl.setEditField("name", e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <div className="grid flex-1 gap-2">
+                <Label htmlFor="edit-parent"><span className="text-destructive">*</span> Akun Induk</Label>
+                <Select
+                  value={ctrl.editForm.parent_id}
+                  onValueChange={(v) => ctrl.setEditField("parent_id", v)}
+                >
+                  <SelectTrigger id="edit-parent">
+                    <SelectValue placeholder="Pilih akun induk" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ctrl.flatAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.code} — {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid flex-1 gap-2">
+                <Label htmlFor="edit-code"><span className="text-destructive">*</span> Nomor Akun</Label>
+                <Input
+                  id="edit-code"
+                  placeholder="Contoh: 120.000"
+                  value={ctrl.editForm.code}
+                  onChange={(e) => ctrl.setEditField("code", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="edit-balance"><span className="text-destructive">*</span> Saldo</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Rp.</span>
+                <Input
+                  id="edit-balance"
+                  placeholder="0"
+                  value={ctrl.editForm.starting_balance}
+                  onChange={(e) =>
+                    ctrl.setEditField("starting_balance", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+
+            {ctrl.editError && (
+              <p className="text-sm text-destructive">{ctrl.editError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            {(() => {
+              const isValid =
+                ctrl.editForm.name.trim() !== "" &&
+                ctrl.editForm.code.trim() !== "";
+              return (
+                <Button
+                  onClick={ctrl.submitEdit}
+                  disabled={ctrl.isEditing || !isValid}
+                  className={"w-full " +
+                    (isValid
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-muted text-muted-foreground hover:bg-muted")
+                  }
+                >
+                  {ctrl.isEditing ? "Menyimpan..." : "Simpan Perubahan"}
+                </Button>
+              );
+            })()}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Delete Confirmation Dialog ---- */}
+      <Dialog open={ctrl.isDeleteOpen} onOpenChange={ctrl.setDeleteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <div className="flex flex-col items-center gap-4 py-4 text-center">
+            {/* Warning icon */}
+            <div className="flex h-24 w-24 items-center justify-center">
+              <TriangleAlert className="h-full w-full" />
+            </div>
+
+            {/* Header */}
+            <h3 className="text-lg font-semibold">Hapus Akun</h3>
+
+            {/* Description */}
+            <p className="text-sm text-muted-foreground">
+              Apakah kamu yakin ingin menghapus akun ini?
+            </p>
+
+            {ctrl.deleteError && (
+              <p className="text-sm text-destructive">{ctrl.deleteError}</p>
+            )}
+
+            {/* Delete button */}
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={ctrl.confirmDelete}
+              disabled={ctrl.isDeleting}
+            >
+              {ctrl.isDeleting ? "Menghapus..." : "Hapus"}
+            </Button>
+
+            {/* Cancel button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => ctrl.setDeleteOpen(false)}
+              disabled={ctrl.isDeleting}
+            >
+              Batal
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
