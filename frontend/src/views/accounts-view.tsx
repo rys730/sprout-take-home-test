@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Lock, TriangleAlert } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Lock, TriangleAlert, CircleCheck } from "lucide-react";
 import type { AccountTreeNode, Account } from "@/lib/types";
 import type { AccountsController } from "@/controllers/accounts-controller";
 import { flattenChildren } from "@/controllers/accounts-controller";
@@ -450,6 +450,30 @@ export function AccountsView(ctrl: AccountsController) {
               disabled={ctrl.isDeleting}
             >
               Batal
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Success Dialog ---- */}
+      <Dialog open={ctrl.isSuccessOpen} onOpenChange={ctrl.setSuccessOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <div className="flex flex-col items-center gap-4 py-4 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <CircleCheck className="h-full w-full text-green-600" />
+            </div>
+
+            <h3 className="text-lg font-semibold">Berhasil Tambah Akun Baru</h3>
+
+            <p className="text-sm text-muted-foreground">
+              {ctrl.successMessage}
+            </p>
+
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => ctrl.setSuccessOpen(false)}
+            >
+              Kembali
             </Button>
           </div>
         </DialogContent>

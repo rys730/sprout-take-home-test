@@ -116,6 +116,10 @@ export interface AccountsController {
   isDeleting: boolean;
   deleteError: string | null;
 
+  // Success dialog
+  isSuccessOpen: boolean;
+  successMessage: string;
+
   setSearch: (query: string) => void;
   toggleExpand: (id: string) => void;
   toggleTable: (id: string) => void;
@@ -133,6 +137,8 @@ export interface AccountsController {
   openDelete: (account: Account) => void;
   setDeleteOpen: (open: boolean) => void;
   confirmDelete: () => Promise<void>;
+
+  setSuccessOpen: (open: boolean) => void;
 }
 
 export function useAccountsController(): AccountsController {
@@ -163,6 +169,10 @@ export function useAccountsController(): AccountsController {
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // ---- Success dialog state ----
+  const [isSuccessOpen, setSuccessOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const fetchTree = useCallback(async () => {
     try {
@@ -261,6 +271,8 @@ export function useAccountsController(): AccountsController {
       setCreateOpen(false);
       setCreateForm(emptyForm);
       await fetchTree();
+      setSuccessMessage("Akun baru berhasil ditambahkan!");
+      setSuccessOpen(true);
     } catch (err) {
       setCreateError(
         err instanceof Error ? err.message : "Gagal membuat akun"
@@ -393,5 +405,9 @@ export function useAccountsController(): AccountsController {
     openDelete,
     setDeleteOpen: handleSetDeleteOpen,
     confirmDelete,
+
+    isSuccessOpen,
+    successMessage,
+    setSuccessOpen,
   };
 }
