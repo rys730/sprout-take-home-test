@@ -95,6 +95,10 @@ func (m *mockAccountRepo) IsReferencedInJournalLines(_ context.Context, _ string
 	return false, nil
 }
 
+func (m *mockAccountRepo) DeleteRelatedJournalEntries(_ context.Context, _ string) error {
+	return nil
+}
+
 func (m *mockAccountRepo) Create(_ context.Context, account *domain.Account) (*domain.Account, error) {
 	account.ID = fmt.Sprintf("generated-%s", account.Code)
 	m.accounts[account.ID] = account

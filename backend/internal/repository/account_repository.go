@@ -144,6 +144,37 @@ func (r *AccountRepository) IsReferencedInJournalLines(ctx context.Context, id s
 	return ref, nil
 }
 
+// DeleteRelatedJournalEntries removes all journal entry lines referencing the
+// given account and then deletes any journal entries that become empty as a result.
+func (r *AccountRepository) DeleteRelatedJournalEntries(ctx context.Context, accountID string) error {
+	uid := utils.ParseUUID(accountID)
+
+	// 1. Find all journal entries that reference this account
+	entryIDs, err := r.q.GetJournalEntryIDsByAccountID(ctx, uid)
+	if err != nil {
+		return fmt.Errorf("get journal entry ids for account: %w", err)
+	}
+
+	// 2. Delete all journal entry lines for this account
+	if err := r.q.DeleteJournalEntryLinesByAccountID(ctx, uid); err != nil {
+		return fmt.Errorf("delete journal entry lines by account: %w", err)
+	}
+
+	// 3. Delete the now-orphaned journal entries
+	//    (force delete regardless of status — these are system-generated opening/adjustment entries)
+	for _, entryID := range entryIDs {
+		// Delete any remaining lines for this entry first
+		if err := r.q.DeleteJournalEntryLinesByEntryID(ctx, entryID); err != nil {
+			return fmt.Errorf("delete remaining journal entry lines: %w", err)
+		}
+		if err := r.q.ForceDeleteJournalEntry(ctx, entryID); err != nil {
+			return fmt.Errorf("force delete journal entry: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (r *AccountRepository) Create(ctx context.Context, account *domain.Account) (*domain.Account, error) {
 	row, err := r.q.CreateAccount(ctx, queries.CreateAccountParams{
 		Code:      account.Code,
@@ -165,9 +196,12 @@ func (r *AccountRepository) Create(ctx context.Context, account *domain.Account)
 
 func (r *AccountRepository) Update(ctx context.Context, account *domain.Account) (*domain.Account, error) {
 	row, err := r.q.UpdateAccount(ctx, queries.UpdateAccountParams{
-		ID:   utils.ParseUUID(account.ID),
-		Code: account.Code,
-		Name: account.Name,
+		ID:       utils.ParseUUID(account.ID),
+		Code:     account.Code,
+		Name:     account.Name,
+		ParentID: utils.StringPtrToUUID(account.ParentID),
+		Level:    int32(account.Level),
+		Type:     queries.AccountType(account.Type),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

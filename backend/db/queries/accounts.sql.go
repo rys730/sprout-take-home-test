@@ -371,19 +371,29 @@ func (q *Queries) SearchAccounts(ctx context.Context, arg SearchAccountsParams) 
 
 const updateAccount = `-- name: UpdateAccount :one
 UPDATE accounts
-SET code = $2, name = $3, updated_at = NOW()
+SET code = $2, name = $3, parent_id = $4, level = $5, type = $6, updated_at = NOW()
 WHERE id = $1
 RETURNING id, code, name, type, parent_id, level, is_system, is_control, is_active, created_by, created_at, updated_at
 `
 
 type UpdateAccountParams struct {
-	ID   pgtype.UUID `json:"id"`
-	Code string      `json:"code"`
-	Name string      `json:"name"`
+	ID       pgtype.UUID `json:"id"`
+	Code     string      `json:"code"`
+	Name     string      `json:"name"`
+	ParentID pgtype.UUID `json:"parent_id"`
+	Level    int32       `json:"level"`
+	Type     AccountType `json:"type"`
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error) {
-	row := q.db.QueryRow(ctx, updateAccount, arg.ID, arg.Code, arg.Name)
+	row := q.db.QueryRow(ctx, updateAccount,
+		arg.ID,
+		arg.Code,
+		arg.Name,
+		arg.ParentID,
+		arg.Level,
+		arg.Type,
+	)
 	var i Account
 	err := row.Scan(
 		&i.ID,

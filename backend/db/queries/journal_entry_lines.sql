@@ -19,6 +19,12 @@ RETURNING id, journal_entry_id, account_id, debit, credit, line_order, created_a
 -- name: DeleteJournalEntryLinesByEntryID :exec
 DELETE FROM journal_entry_lines WHERE journal_entry_id = $1;
 
+-- name: GetJournalEntryIDsByAccountID :many
+SELECT DISTINCT journal_entry_id FROM journal_entry_lines WHERE account_id = $1;
+
+-- name: DeleteJournalEntryLinesByAccountID :exec
+DELETE FROM journal_entry_lines WHERE account_id = $1;
+
 -- name: GetJournalEntryLinesTotals :one
 SELECT COALESCE(SUM(debit), 0)::NUMERIC(18,2) AS total_debit,
        COALESCE(SUM(credit), 0)::NUMERIC(18,2) AS total_credit

@@ -46,6 +46,15 @@ func (q *Queries) CreateJournalEntryLine(ctx context.Context, arg CreateJournalE
 	return i, err
 }
 
+const deleteJournalEntryLinesByAccountID = `-- name: DeleteJournalEntryLinesByAccountID :exec
+DELETE FROM journal_entry_lines WHERE account_id = $1
+`
+
+func (q *Queries) DeleteJournalEntryLinesByAccountID(ctx context.Context, accountID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteJournalEntryLinesByAccountID, accountID)
+	return err
+}
+
 const deleteJournalEntryLinesByEntryID = `-- name: DeleteJournalEntryLinesByEntryID :exec
 DELETE FROM journal_entry_lines WHERE journal_entry_id = $1
 `
@@ -111,6 +120,30 @@ func (q *Queries) GetAccountLedger(ctx context.Context, arg GetAccountLedgerPara
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getJournalEntryIDsByAccountID = `-- name: GetJournalEntryIDsByAccountID :many
+SELECT DISTINCT journal_entry_id FROM journal_entry_lines WHERE account_id = $1
+`
+
+func (q *Queries) GetJournalEntryIDsByAccountID(ctx context.Context, accountID pgtype.UUID) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, getJournalEntryIDsByAccountID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var journal_entry_id pgtype.UUID
+		if err := rows.Scan(&journal_entry_id); err != nil {
+			return nil, err
+		}
+		items = append(items, journal_entry_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

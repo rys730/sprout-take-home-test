@@ -175,6 +175,15 @@ func (q *Queries) DeleteJournalEntry(ctx context.Context, id pgtype.UUID) error 
 	return err
 }
 
+const forceDeleteJournalEntry = `-- name: ForceDeleteJournalEntry :exec
+DELETE FROM journal_entries WHERE id = $1
+`
+
+func (q *Queries) ForceDeleteJournalEntry(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, forceDeleteJournalEntry, id)
+	return err
+}
+
 const generateJournalEntryNumber = `-- name: GenerateJournalEntryNumber :one
 SELECT 'JU-' || to_char(CURRENT_DATE, 'YYYY') || '-' ||
        LPAD((COALESCE(

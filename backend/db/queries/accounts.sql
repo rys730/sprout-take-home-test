@@ -59,7 +59,7 @@ RETURNING id, code, name, type, parent_id, level, is_system, is_control, is_acti
 
 -- name: UpdateAccount :one
 UPDATE accounts
-SET code = $2, name = $3, updated_at = NOW()
+SET code = $2, name = $3, parent_id = $4, level = $5, type = $6, updated_at = NOW()
 WHERE id = $1
 RETURNING id, code, name, type, parent_id, level, is_system, is_control, is_active, created_by, created_at, updated_at;
 

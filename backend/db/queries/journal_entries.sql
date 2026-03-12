@@ -81,6 +81,9 @@ RETURNING id, entry_number, date, description, status,
 -- name: DeleteJournalEntry :exec
 DELETE FROM journal_entries WHERE id = $1 AND status = 'draft';
 
+-- name: ForceDeleteJournalEntry :exec
+DELETE FROM journal_entries WHERE id = $1;
+
 -- name: GenerateJournalEntryNumber :one
 SELECT 'JU-' || to_char(CURRENT_DATE, 'YYYY') || '-' ||
        LPAD((COALESCE(

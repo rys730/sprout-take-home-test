@@ -169,9 +169,9 @@ func (h *AccountHandler) UpdateAccount(c echo.Context) error {
 		})
 	}
 
-	if req.Code == nil && req.Name == nil && req.Balance == nil {
+	if req.Code == nil && req.Name == nil && req.Balance == nil && req.ParentID == nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "At least one of code, name, or balance must be provided",
+			"error": "At least one of code, name, parent_id, or balance must be provided",
 		})
 	}
 

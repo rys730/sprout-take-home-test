@@ -135,6 +135,32 @@ func (uc *AccountUseCase) Update(ctx context.Context, id string, req domain.Upda
 		}
 	}
 
+	// 4. Apply parent_id update (re-parent)
+	if req.ParentID != nil {
+		currentParentID := ""
+		if account.ParentID != nil {
+			currentParentID = *account.ParentID
+		}
+		if *req.ParentID != currentParentID {
+			// Validate new parent exists
+			newParent, err := uc.repo.GetByID(ctx, *req.ParentID)
+			if err != nil {
+				return nil, fmt.Errorf("get new parent account: %w", err)
+			}
+			if newParent == nil {
+				return nil, fmt.Errorf("new parent account not found")
+			}
+			// Prevent moving an account under itself or its descendants
+			if *req.ParentID == id {
+				return nil, fmt.Errorf("cannot set account as its own parent")
+			}
+			// Inherit type from new parent, recalculate level
+			account.ParentID = req.ParentID
+			account.Type = newParent.Type
+			account.Level = newParent.Level + 1
+		}
+	}
+
 	updated, err := uc.repo.Update(ctx, account)
 	if err != nil {
 		return nil, fmt.Errorf("update account: %w", err)
@@ -192,13 +218,15 @@ func (uc *AccountUseCase) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("cannot delete account with child accounts")
 	}
 
-	// 4. Prevent deleting accounts referenced in journal entries
+	// 4. Delete related journal entries (opening balance, adjustments)
 	isReferenced, err := uc.repo.IsReferencedInJournalLines(ctx, id)
 	if err != nil {
 		return fmt.Errorf("check journal references: %w", err)
 	}
 	if isReferenced {
-		return fmt.Errorf("cannot delete account referenced in journal entries")
+		if err := uc.repo.DeleteRelatedJournalEntries(ctx, id); err != nil {
+			return fmt.Errorf("delete related journal entries: %w", err)
+		}
 	}
 
 	return uc.repo.Delete(ctx, id)

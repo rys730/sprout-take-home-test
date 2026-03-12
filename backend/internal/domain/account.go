@@ -49,9 +49,10 @@ type CreateAccountRequest struct {
 
 // UpdateAccountRequest holds the data allowed to update on an account.
 type UpdateAccountRequest struct {
-	Code    *string  `json:"code,omitempty"`
-	Name    *string  `json:"name,omitempty"`
-	Balance *float64 `json:"balance,omitempty"` // optional: adjusts balance via journal entry
+	Code     *string  `json:"code,omitempty"`
+	Name     *string  `json:"name,omitempty"`
+	ParentID *string  `json:"parent_id,omitempty"`
+	Balance  *float64 `json:"balance,omitempty"` // optional: adjusts balance via journal entry
 }
 
 // AccountFilter holds optional filter/search parameters.
@@ -71,6 +72,7 @@ type AccountRepository interface {
 	GetChildren(ctx context.Context, parentID string) ([]Account, error)
 	HasChildren(ctx context.Context, id string) (bool, error)
 	IsReferencedInJournalLines(ctx context.Context, id string) (bool, error)
+	DeleteRelatedJournalEntries(ctx context.Context, accountID string) error
 	Create(ctx context.Context, account *Account) (*Account, error)
 	Update(ctx context.Context, account *Account) (*Account, error)
 	Delete(ctx context.Context, id string) error
