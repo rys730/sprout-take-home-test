@@ -100,6 +100,7 @@ export interface AccountsController {
   // Create dialog
   isCreateOpen: boolean;
   createForm: CreateAccountForm;
+  checkCodeExists: boolean;
   isCreating: boolean;
   createError: string | null;
 
@@ -109,6 +110,7 @@ export interface AccountsController {
   editAccountId: string | null;
   isEditing: boolean;
   editError: string | null;
+  checkEditCodeExists: boolean;
 
   // Delete confirmation
   isDeleteOpen: boolean;
@@ -255,6 +257,14 @@ export function useAccountsController(): AccountsController {
     []
   );
 
+  const checkCodeExists = useMemo(()=> {
+    const code = createForm.code.trim();
+    if (!code) return false;
+    return flatAccounts.some(
+      (a) => a.code.toLowerCase() === code.toLowerCase()
+    );
+  }, [createForm.code, flatAccounts]);
+
   const submitCreate = useCallback(async () => {
     setIsCreating(true);
     setCreateError(null);
@@ -334,6 +344,15 @@ export function useAccountsController(): AccountsController {
     }
   }, [editAccountId, editForm, fetchTree]);
 
+  const checkEditCodeExists = useMemo(()=> {
+    const code = editForm.code.trim();
+    if (!code) return false;
+    return flatAccounts.some(
+      (a) =>
+        a.code.toLowerCase() === code.toLowerCase() &&
+        a.id !== editAccountId
+    );
+  }, [editForm.code, editAccountId, flatAccounts]);
   // ---- Delete handlers ----
 
   const openDelete = useCallback((account: Account) => {
@@ -378,6 +397,7 @@ export function useAccountsController(): AccountsController {
 
     isCreateOpen,
     createForm,
+    checkCodeExists,
     isCreating,
     createError,
     setSearch,
@@ -393,6 +413,7 @@ export function useAccountsController(): AccountsController {
     editAccountId,
     isEditing,
     editError,
+    checkEditCodeExists,
     openEdit,
     setEditOpen: handleSetEditOpen,
     setEditField: setEditFieldCb,

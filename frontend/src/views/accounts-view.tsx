@@ -238,6 +238,9 @@ export function AccountsView(ctrl: AccountsController) {
                     value={ctrl.createForm.code}
                     onChange={(e) => ctrl.setCreateField("code", e.target.value)}
                   />
+                  {ctrl.checkCodeExists && (
+                    <p className="text-xs text-destructive">Nomor akun sudah terdaftar</p>
+                  )}
                 </div>
               </div>
 
@@ -268,7 +271,8 @@ export function AccountsView(ctrl: AccountsController) {
                   ctrl.createForm.name.trim() !== "" &&
                   ctrl.createForm.parent_id !== "" &&
                   ctrl.createForm.code.trim() !== "" &&
-                  ctrl.createForm.starting_balance.trim() !== "";
+                  ctrl.createForm.starting_balance.trim() !== "" &&
+                  !ctrl.checkCodeExists;
                 return (
                   <Button
                     onClick={ctrl.submitCreate}
@@ -365,6 +369,9 @@ export function AccountsView(ctrl: AccountsController) {
                   value={ctrl.editForm.code}
                   onChange={(e) => ctrl.setEditField("code", e.target.value)}
                 />
+                {ctrl.checkEditCodeExists && (
+                  <p className="text-xs text-destructive">Nomor akun sudah terdaftar</p>
+                )}
               </div>
             </div>
 
@@ -392,7 +399,8 @@ export function AccountsView(ctrl: AccountsController) {
             {(() => {
               const isValid =
                 ctrl.editForm.name.trim() !== "" &&
-                ctrl.editForm.code.trim() !== "";
+                ctrl.editForm.code.trim() !== "" &&
+                !ctrl.checkEditCodeExists;
               return (
                 <Button
                   onClick={ctrl.submitEdit}
