@@ -491,6 +491,62 @@ func (q *Queries) ReverseJournalEntry(ctx context.Context, arg ReverseJournalEnt
 	return i, err
 }
 
+const setJournalEntryTotals = `-- name: SetJournalEntryTotals :one
+UPDATE journal_entries
+SET total_debit = $2,
+    total_credit = $3,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, entry_number, date, description, status,
+          total_debit, total_credit, reversal_of, reversal_reason,
+          reversed_by, source, created_by, created_at, updated_at
+`
+
+type SetJournalEntryTotalsParams struct {
+	ID          pgtype.UUID    `json:"id"`
+	TotalDebit  pgtype.Numeric `json:"total_debit"`
+	TotalCredit pgtype.Numeric `json:"total_credit"`
+}
+
+type SetJournalEntryTotalsRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	EntryNumber    string             `json:"entry_number"`
+	Date           pgtype.Date        `json:"date"`
+	Description    string             `json:"description"`
+	Status         JournalStatus      `json:"status"`
+	TotalDebit     pgtype.Numeric     `json:"total_debit"`
+	TotalCredit    pgtype.Numeric     `json:"total_credit"`
+	ReversalOf     pgtype.UUID        `json:"reversal_of"`
+	ReversalReason pgtype.Text        `json:"reversal_reason"`
+	ReversedBy     pgtype.UUID        `json:"reversed_by"`
+	Source         pgtype.Text        `json:"source"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) SetJournalEntryTotals(ctx context.Context, arg SetJournalEntryTotalsParams) (SetJournalEntryTotalsRow, error) {
+	row := q.db.QueryRow(ctx, setJournalEntryTotals, arg.ID, arg.TotalDebit, arg.TotalCredit)
+	var i SetJournalEntryTotalsRow
+	err := row.Scan(
+		&i.ID,
+		&i.EntryNumber,
+		&i.Date,
+		&i.Description,
+		&i.Status,
+		&i.TotalDebit,
+		&i.TotalCredit,
+		&i.ReversalOf,
+		&i.ReversalReason,
+		&i.ReversedBy,
+		&i.Source,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateJournalEntry = `-- name: UpdateJournalEntry :one
 UPDATE journal_entries
 SET description = $2, date = $3, updated_at = NOW()

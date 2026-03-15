@@ -138,13 +138,14 @@ func (r *JournalRepository) Create(ctx context.Context, entry *domain.JournalEnt
 		if err != nil {
 			return nil, fmt.Errorf("compute totals: %w", err)
 		}
-		_, err = qtx.PostJournalEntry(ctx, queries.PostJournalEntryParams{
+		// Use SetJournalEntryTotals to set totals (entry is already 'posted', skip PostJournalEntry which requires draft status)
+		_, err = qtx.SetJournalEntryTotals(ctx, queries.SetJournalEntryTotalsParams{
 			ID:          entryID,
 			TotalDebit:  totals.TotalDebit,
 			TotalCredit: totals.TotalCredit,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("post journal entry: %w", err)
+			return nil, fmt.Errorf("set journal entry totals: %w", err)
 		}
 	}
 

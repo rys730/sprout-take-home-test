@@ -61,6 +61,16 @@ RETURNING id, entry_number, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
+-- name: SetJournalEntryTotals :one
+UPDATE journal_entries
+SET total_debit = $2,
+    total_credit = $3,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, entry_number, date, description, status,
+          total_debit, total_credit, reversal_of, reversal_reason,
+          reversed_by, source, created_by, created_at, updated_at;
+
 -- name: ReverseJournalEntry :one
 UPDATE journal_entries
 SET status = 'reversed',
