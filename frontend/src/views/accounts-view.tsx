@@ -26,7 +26,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Lock, TriangleAlert, CircleCheck } from "lucide-react";
+import {
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Trash2,
+  Lock,
+  TriangleAlert,
+  CircleCheck,
+} from "lucide-react";
 import type { AccountTreeNode, Account } from "@/lib/types";
 import type { AccountsController } from "@/controllers/accounts-controller";
 import { flattenChildren } from "@/controllers/accounts-controller";
@@ -75,7 +84,7 @@ function AccountTable({
         <Table>
           <TableHeader>
             <TableRow
-              className="bg-muted/50 cursor-pointer"
+              className="bg-muted cursor-pointer"
               onClick={onToggleTable}
             >
               <TableHead className="font-mono font-semibold">
@@ -118,7 +127,7 @@ function AccountTable({
                   return (
                     <TableRow
                       key={acct.id}
-                      className="hover:bg-muted/50"
+                      className="bg-white hover:bg-muted/50"
                     >
                       <TableCell className="w-50 font-mono text-sm">
                         <div className="flex items-center">
@@ -200,7 +209,9 @@ export function AccountsView(ctrl: AccountsController) {
             <div className="grid gap-4 py-4">
               {/* Nama Akun */}
               <div className="grid gap-2">
-                <Label htmlFor="create-name"><span className="text-destructive">*</span> Nama Akun</Label>
+                <Label htmlFor="create-name">
+                  <span className="text-destructive">*</span> Nama AkunDelete
+                </Label>
                 <Input
                   id="create-name"
                   placeholder="Contoh: Pemasukan"
@@ -212,7 +223,9 @@ export function AccountsView(ctrl: AccountsController) {
               {/* Akun Induk & Nomor Akun */}
               <div className="flex gap-4">
                 <div className="grid flex-1 gap-2">
-                  <Label htmlFor="create-parent"><span className="text-destructive">*</span> Akun Induk</Label>
+                  <Label htmlFor="create-parent">
+                    <span className="text-destructive">*</span> Akun Induk
+                  </Label>
                   <Select
                     value={ctrl.createForm.parent_id}
                     onValueChange={(v) => ctrl.setCreateField("parent_id", v)}
@@ -231,22 +244,30 @@ export function AccountsView(ctrl: AccountsController) {
                 </div>
 
                 <div className="grid flex-1 gap-2">
-                  <Label htmlFor="create-code"><span className="text-destructive">*</span> Nomor Akun</Label>
+                  <Label htmlFor="create-code">
+                    <span className="text-destructive">*</span> Nomor Akun
+                  </Label>
                   <Input
                     id="create-code"
                     placeholder="Contoh: 120.000"
                     value={ctrl.createForm.code}
-                    onChange={(e) => ctrl.setCreateField("code", e.target.value)}
+                    onChange={(e) =>
+                      ctrl.setCreateField("code", e.target.value)
+                    }
                   />
                   {ctrl.checkCodeExists && (
-                    <p className="text-xs text-destructive">Nomor akun sudah terdaftar</p>
+                    <p className="text-xs text-destructive">
+                      Nomor akun sudah terdaftar
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Saldo */}
               <div className="grid gap-2">
-                <Label htmlFor="create-balance"><span className="text-destructive">*</span> Saldo Awal</Label>
+                <Label htmlFor="create-balance">
+                  <span className="text-destructive">*</span> Saldo Awal
+                </Label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Rp.</span>
                   <Input
@@ -277,7 +298,8 @@ export function AccountsView(ctrl: AccountsController) {
                   <Button
                     onClick={ctrl.submitCreate}
                     disabled={ctrl.isCreating || !isValid}
-                    className={ "w-full " +
+                    className={
+                      "w-full " +
                       (isValid
                         ? "bg-green-600 hover:bg-green-700 text-white"
                         : "bg-muted text-muted-foreground hover:bg-muted")
@@ -304,9 +326,7 @@ export function AccountsView(ctrl: AccountsController) {
 
       {!ctrl.loading && !ctrl.error && ctrl.filteredTree.length === 0 && (
         <div className="py-12 text-center text-muted-foreground">
-          {ctrl.search
-            ? "Tidak ada akun yang cocok."
-            : "Belum ada data akun."}
+          {ctrl.search ? "Tidak ada akun yang cocok." : "Belum ada data akun."}
         </div>
       )}
 
@@ -332,7 +352,9 @@ export function AccountsView(ctrl: AccountsController) {
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name"><span className="text-destructive">*</span> Nama Akun</Label>
+              <Label htmlFor="edit-name">
+                <span className="text-destructive">*</span> Nama Akun
+              </Label>
               <Input
                 id="edit-name"
                 placeholder="Contoh: Pemasukan"
@@ -343,7 +365,9 @@ export function AccountsView(ctrl: AccountsController) {
 
             <div className="flex gap-4">
               <div className="grid flex-1 gap-2">
-                <Label htmlFor="edit-parent"><span className="text-destructive">*</span> Akun Induk</Label>
+                <Label htmlFor="edit-parent">
+                  <span className="text-destructive">*</span> Akun Induk
+                </Label>
                 <Select
                   value={ctrl.editForm.parent_id}
                   onValueChange={(v) => ctrl.setEditField("parent_id", v)}
@@ -362,7 +386,9 @@ export function AccountsView(ctrl: AccountsController) {
               </div>
 
               <div className="grid flex-1 gap-2">
-                <Label htmlFor="edit-code"><span className="text-destructive">*</span> Nomor Akun</Label>
+                <Label htmlFor="edit-code">
+                  <span className="text-destructive">*</span> Nomor Akun
+                </Label>
                 <Input
                   id="edit-code"
                   placeholder="Contoh: 120.000"
@@ -370,13 +396,17 @@ export function AccountsView(ctrl: AccountsController) {
                   onChange={(e) => ctrl.setEditField("code", e.target.value)}
                 />
                 {ctrl.checkEditCodeExists && (
-                  <p className="text-xs text-destructive">Nomor akun sudah terdaftar</p>
+                  <p className="text-xs text-destructive">
+                    Nomor akun sudah terdaftar
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-balance"><span className="text-destructive">*</span> Saldo</Label>
+              <Label htmlFor="edit-balance">
+                <span className="text-destructive">*</span> Saldo
+              </Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Rp.</span>
                 <Input
@@ -405,7 +435,8 @@ export function AccountsView(ctrl: AccountsController) {
                 <Button
                   onClick={ctrl.submitEdit}
                   disabled={ctrl.isEditing || !isValid}
-                  className={"w-full " +
+                  className={
+                    "w-full " +
                     (isValid
                       ? "bg-green-600 hover:bg-green-700 text-white"
                       : "bg-muted text-muted-foreground hover:bg-muted")
