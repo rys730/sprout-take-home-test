@@ -24,14 +24,14 @@ SELECT i.id, i.invoice_number, i.customer_id, i.issue_date, i.due_date,
 FROM invoices i
 JOIN customers c ON c.id = i.customer_id
 WHERE (sqlc.narg('customer_id')::UUID IS NULL OR i.customer_id = sqlc.narg('customer_id')::UUID)
-  AND (sqlc.narg('statuses')::invoice_status[] IS NULL OR i.status = ANY(sqlc.narg('statuses')::invoice_status[]))
+  AND (sqlc.narg('statuses')::text[] IS NULL OR i.status::text = ANY(sqlc.narg('statuses')::text[]))
 ORDER BY i.due_date ASC
 LIMIT $1 OFFSET $2;
 
 -- name: CountInvoices :one
 SELECT COUNT(*) FROM invoices
 WHERE (sqlc.narg('customer_id')::UUID IS NULL OR customer_id = sqlc.narg('customer_id')::UUID)
-  AND (sqlc.narg('statuses')::invoice_status[] IS NULL OR status = ANY(sqlc.narg('statuses')::invoice_status[]));
+  AND (sqlc.narg('statuses')::text[] IS NULL OR status::text = ANY(sqlc.narg('statuses')::text[]));
 
 -- name: ListUnpaidInvoicesByCustomer :many
 SELECT id, invoice_number, customer_id, issue_date, due_date,

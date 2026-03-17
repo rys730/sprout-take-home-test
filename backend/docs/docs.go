@@ -764,7 +764,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by status (unpaid, partially_paid, paid)",
+                        "description": "Comma-separated status filter (unpaid, partially_paid, paid)",
                         "name": "status",
                         "in": "query"
                     },

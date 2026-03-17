@@ -14,12 +14,12 @@ import (
 const countInvoices = `-- name: CountInvoices :one
 SELECT COUNT(*) FROM invoices
 WHERE ($1::UUID IS NULL OR customer_id = $1::UUID)
-  AND ($2::invoice_status[] IS NULL OR status = ANY($2::invoice_status[]))
+  AND ($2::text[] IS NULL OR status::text = ANY($2::text[]))
 `
 
 type CountInvoicesParams struct {
-	CustomerID pgtype.UUID     `json:"customer_id"`
-	Statuses   []InvoiceStatus `json:"statuses"`
+	CustomerID pgtype.UUID `json:"customer_id"`
+	Statuses   []string    `json:"statuses"`
 }
 
 func (q *Queries) CountInvoices(ctx context.Context, arg CountInvoicesParams) (int64, error) {
@@ -200,16 +200,16 @@ SELECT i.id, i.invoice_number, i.customer_id, i.issue_date, i.due_date,
 FROM invoices i
 JOIN customers c ON c.id = i.customer_id
 WHERE ($3::UUID IS NULL OR i.customer_id = $3::UUID)
-  AND ($4::invoice_status[] IS NULL OR i.status = ANY($4::invoice_status[]))
+  AND ($4::text[] IS NULL OR i.status::text = ANY($4::text[]))
 ORDER BY i.due_date ASC
 LIMIT $1 OFFSET $2
 `
 
 type ListInvoicesParams struct {
-	Limit      int32           `json:"limit"`
-	Offset     int32           `json:"offset"`
-	CustomerID pgtype.UUID     `json:"customer_id"`
-	Statuses   []InvoiceStatus `json:"statuses"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+	CustomerID pgtype.UUID `json:"customer_id"`
+	Statuses   []string    `json:"statuses"`
 }
 
 type ListInvoicesRow struct {
