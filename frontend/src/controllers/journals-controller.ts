@@ -1,7 +1,7 @@
 "use client";
 
-import { journalsApi } from "@/lib/api";
-import { CreateJournalRequest, JournalEntry, JournalLine } from "@/lib/types";
+import { invoicesApi, journalsApi } from "@/lib/api";
+import { CreateJournalRequest, Invoice, JournalEntry, JournalLine } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 export interface JournalsController {
@@ -25,6 +25,9 @@ export interface JournalsController {
     updateAndPostJournal: (id: string, data: CreateJournalRequest) => Promise<void>;
     deleteJournal: (id: string) => Promise<void>;
     reverseJournal: (id: string, reason: string) => Promise<void>;
+    invoices: Invoice[];
+    loadingInvoices: boolean;
+    fetchInvoices: () => Promise<void>;
 }
 
 export function useJournalsController(): JournalsController {
@@ -35,6 +38,8 @@ export function useJournalsController(): JournalsController {
     const [newJournalLines, setNewJournalLines] = useState<Partial<JournalLine[]>>([]);
     const [editEntry, setEditEntry] = useState<JournalEntry | null>(null);
     const [loadingEdit, setLoadingEdit] = useState(false);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
 
     const fetchTable = useCallback(async () => {
         try {
@@ -162,6 +167,19 @@ export function useJournalsController(): JournalsController {
         }
     }
 
+    const fetchInvoices = useCallback(async () => {
+        try {
+            setLoadingInvoices(true);
+            const res = await invoicesApi.list();
+            const data: Invoice[] = Array.isArray(res) ? res : (res as unknown as { data: Invoice[] }).data ?? [];
+            setInvoices(data);
+        } catch {
+            // silently fail — invoice list is optional in journal form
+        } finally {
+            setLoadingInvoices(false);
+        }
+    }, []);
+
     return { 
         loading,
         error,
@@ -182,5 +200,8 @@ export function useJournalsController(): JournalsController {
         updateAndPostJournal,
         deleteJournal,
         reverseJournal,
+        invoices,
+        loadingInvoices,
+        fetchInvoices,
     };
 }

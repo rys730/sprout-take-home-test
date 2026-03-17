@@ -77,6 +77,7 @@ func (uc *journalUseCase) Create(ctx context.Context, req domain.CreateJournalRe
 	// Build domain entry
 	entry := &domain.JournalEntry{
 		EntryNumber: entryNumber,
+		InvoiceID:   req.InvoiceID,
 		Date:        req.Date,
 		Description: req.Description,
 		Status:      status,
@@ -86,9 +87,9 @@ func (uc *journalUseCase) Create(ctx context.Context, req domain.CreateJournalRe
 	}
 	for _, l := range req.Lines {
 		entry.Lines = append(entry.Lines, domain.JournalLine{
-			AccountID:   l.AccountID,
-			Debit:       l.Debit,
-			Credit:      l.Credit,
+			AccountID: l.AccountID,
+			Debit:     l.Debit,
+			Credit:    l.Credit,
 		})
 	}
 
@@ -148,9 +149,9 @@ func (uc *journalUseCase) Update(ctx context.Context, id string, req domain.Upda
 		existing.Lines = nil
 		for _, l := range req.Lines {
 			existing.Lines = append(existing.Lines, domain.JournalLine{
-				AccountID:   l.AccountID,
-				Debit:       l.Debit,
-				Credit:      l.Credit,
+				AccountID: l.AccountID,
+				Debit:     l.Debit,
+				Credit:    l.Credit,
 			})
 		}
 		replaceLines = true

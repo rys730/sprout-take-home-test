@@ -187,7 +187,6 @@ type Invoice struct {
 type JournalEntry struct {
 	ID             pgtype.UUID        `json:"id"`
 	EntryNumber    string             `json:"entry_number"`
-	InvoiceNumber  pgtype.Text        `json:"invoice_number"`
 	Date           pgtype.Date        `json:"date"`
 	Description    string             `json:"description"`
 	Status         JournalStatus      `json:"status"`
@@ -200,6 +199,7 @@ type JournalEntry struct {
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	InvoiceID      pgtype.UUID        `json:"invoice_id"`
 }
 
 type JournalEntryLine struct {

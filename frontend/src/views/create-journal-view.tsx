@@ -46,7 +46,7 @@ export function CreateJournalView({
     { accountId: "", debit: "", credit: "" },
   ]);
 
-  const { fetchById, editEntry } = journalsController;
+  const { fetchById, editEntry, invoices, fetchInvoices } = journalsController;
 
   // Load existing draft when editId is provided
   useEffect(() => {
@@ -59,6 +59,7 @@ export function CreateJournalView({
     if (!editEntry) return;
     if (editEntry.date) setDate(new Date(editEntry.date));
     if (editEntry.description) setDescription(editEntry.description);
+    if (editEntry.invoice_id) setInvoiceId(editEntry.invoice_id);
     if (editEntry.lines && editEntry.lines.length > 0) {
       setRows(
         editEntry.lines.map((line) => ({
@@ -69,6 +70,11 @@ export function CreateJournalView({
       );
     }
   }, [editEntry]);
+
+  // Fetch invoice list on mount
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const addRow = () => {
     setRows([...rows, { accountId: "", debit: "", credit: "" }]);
@@ -87,13 +93,6 @@ export function CreateJournalView({
   const removeRow = (index: number) => {
     setRows(rows.filter((_, i) => i !== index));
   };
-
-  // Placeholder invoices — replace with real data from API later
-  const invoices = [
-    { id: "inv-001", label: "INV-001" },
-    { id: "inv-002", label: "INV-002" },
-    { id: "inv-003", label: "INV-003" },
-  ];
 
   const accounts = accountsController.flatAccounts;
 
@@ -206,7 +205,7 @@ export function CreateJournalView({
             <SelectContent>
               {invoices.map((inv) => (
                 <SelectItem key={inv.id} value={inv.id}>
-                  {inv.label}
+                  {inv.invoice_number}{inv.customer_name ? ` — ${inv.customer_name}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>

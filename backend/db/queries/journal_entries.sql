@@ -3,21 +3,21 @@
 -- ============================================================================
 
 -- name: GetJournalEntryByID :one
-SELECT id, entry_number, date, description, status,
+SELECT id, entry_number, invoice_id, date, description, status,
        total_debit, total_credit, reversal_of, reversal_reason,
        reversed_by, source, created_by, created_at, updated_at
 FROM journal_entries
 WHERE id = $1;
 
 -- name: GetJournalEntryByEntryNumber :one
-SELECT id, entry_number, date, description, status,
+SELECT id, entry_number, invoice_id, date, description, status,
        total_debit, total_credit, reversal_of, reversal_reason,
        reversed_by, source, created_by, created_at, updated_at
 FROM journal_entries
 WHERE entry_number = $1;
 
 -- name: ListJournalEntries :many
-SELECT id, entry_number, date, description, status,
+SELECT id, entry_number, invoice_id, date, description, status,
        total_debit, total_credit, reversal_of, reversal_reason,
        reversed_by, source, created_by, created_at, updated_at
 FROM journal_entries
@@ -36,9 +36,9 @@ WHERE (sqlc.narg('status')::journal_status IS NULL OR status = sqlc.narg('status
   AND (sqlc.narg('end_date')::DATE IS NULL OR date <= sqlc.narg('end_date')::DATE);
 
 -- name: CreateJournalEntry :one
-INSERT INTO journal_entries (entry_number, date, description, source, status, created_by)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, entry_number, date, description, status,
+INSERT INTO journal_entries (entry_number, invoice_id, date, description, source, status, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
@@ -46,7 +46,7 @@ RETURNING id, entry_number, date, description, status,
 UPDATE journal_entries
 SET description = $2, date = $3, updated_at = NOW()
 WHERE id = $1 AND status = 'draft'
-RETURNING id, entry_number, date, description, status,
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
@@ -57,7 +57,7 @@ SET status = 'posted',
     total_credit = $3,
     updated_at = NOW()
 WHERE id = $1 AND status = 'draft'
-RETURNING id, entry_number, date, description, status,
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
@@ -67,7 +67,7 @@ SET total_debit = $2,
     total_credit = $3,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, entry_number, date, description, status,
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
@@ -77,14 +77,14 @@ SET status = 'reversed',
     reversed_by = $2,
     updated_at = NOW()
 WHERE id = $1 AND status = 'posted'
-RETURNING id, entry_number, date, description, status,
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 
 -- name: CreateReversalJournalEntry :one
 INSERT INTO journal_entries (entry_number, date, description, source, status, reversal_of, reversal_reason, created_by)
 VALUES ($1, $2, $3, $4, 'posted', $5, $6, $7)
-RETURNING id, entry_number, date, description, status,
+RETURNING id, entry_number, invoice_id, date, description, status,
           total_debit, total_credit, reversal_of, reversal_reason,
           reversed_by, source, created_by, created_at, updated_at;
 

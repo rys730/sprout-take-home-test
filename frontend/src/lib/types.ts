@@ -63,6 +63,7 @@ export interface JournalEntry {
   entry_number: string;
   date: string;
   description: string;
+  invoice_id?: string;
   status: JournalStatus;
   total_debit: number;
   total_credit: number;

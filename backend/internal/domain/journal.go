@@ -18,6 +18,7 @@ const (
 type JournalEntry struct {
 	ID             string        `json:"id"`
 	EntryNumber    string        `json:"entry_number"`
+	InvoiceID      *string       `json:"invoice_id,omitempty"`
 	Date           string        `json:"date"` // YYYY-MM-DD
 	Description    string        `json:"description"`
 	Status         JournalStatus `json:"status"`
@@ -25,7 +26,7 @@ type JournalEntry struct {
 	TotalCredit    float64       `json:"total_credit"`
 	ReversalOf     *string       `json:"reversal_of,omitempty"`
 	ReversalReason *string       `json:"reversal_reason,omitempty"`
-	ReversedBy     *string       `json:"reversed_by,omitempty"` // ID of the reversing entry
+	ReversedBy     *string       `json:"reversed_by,omitempty"`
 	Source         string        `json:"source"`
 	CreatedBy      *string       `json:"created_by,omitempty"`
 	CreatedAt      time.Time     `json:"created_at"`
@@ -56,15 +57,15 @@ type CreateJournalRequest struct {
 	Date        string              `json:"date" validate:"required"` // YYYY-MM-DD
 	Description string              `json:"description" validate:"required"`
 	InvoiceID   *string             `json:"invoice_id,omitempty"` // optional link to an invoice
-	Status      string              `json:"status"` // "draft" or "posted"; defaults to "draft"
+	Status      string              `json:"status"`               // "draft" or "posted"; defaults to "draft"
 	Lines       []CreateJournalLine `json:"lines" validate:"required,min=2"`
 }
 
 // CreateJournalLine represents a single line in the create request.
 type CreateJournalLine struct {
-	AccountID   string  `json:"account_id" validate:"required"`
-	Debit       float64 `json:"debit"`
-	Credit      float64 `json:"credit"`
+	AccountID string  `json:"account_id" validate:"required"`
+	Debit     float64 `json:"debit"`
+	Credit    float64 `json:"credit"`
 }
 
 // UpdateJournalRequest is the payload for updating a draft journal entry.

@@ -107,6 +107,7 @@ func (r *JournalRepository) Create(ctx context.Context, entry *domain.JournalEnt
 
 	row, err := qtx.CreateJournalEntry(ctx, queries.CreateJournalEntryParams{
 		EntryNumber: entry.EntryNumber,
+		InvoiceID:   utils.StringPtrToUUID(entry.InvoiceID),
 		Date:        utils.StringToDate(entry.Date),
 		Description: entry.Description,
 		Source:      pgtype.Text{String: "manual", Valid: true},
@@ -340,6 +341,7 @@ func (r *JournalRepository) GenerateEntryNumber(ctx context.Context) (string, er
 type journalRowFields struct {
 	ID             pgtype.UUID
 	EntryNumber    string
+	InvoiceID      pgtype.UUID
 	Date           pgtype.Date
 	Description    string
 	Status         queries.JournalStatus
@@ -362,6 +364,7 @@ func journalFieldsToDomain(f journalRowFields) domain.JournalEntry {
 	return domain.JournalEntry{
 		ID:             utils.UUIDToString(f.ID),
 		EntryNumber:    f.EntryNumber,
+		InvoiceID:      utils.UUIDToStringPtr(f.InvoiceID),
 		Date:           utils.DateToString(f.Date),
 		Description:    f.Description,
 		Status:         domain.JournalStatus(f.Status),
@@ -382,6 +385,7 @@ func listRowToDomain(r queries.ListJournalEntriesRow) domain.JournalEntry {
 		journalRowFields{
 			ID:             r.ID,
 			EntryNumber:    r.EntryNumber,
+			InvoiceID:      r.InvoiceID,
 			Date:           r.Date,
 			Description:    r.Description,
 			Status:         r.Status,
@@ -402,6 +406,7 @@ func getByIDRowToDomain(r queries.GetJournalEntryByIDRow) domain.JournalEntry {
 		journalRowFields{
 			ID:             r.ID,
 			EntryNumber:    r.EntryNumber,
+			InvoiceID:      r.InvoiceID,
 			Date:           r.Date,
 			Description:    r.Description,
 			Status:         r.Status,
