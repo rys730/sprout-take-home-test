@@ -210,7 +210,7 @@ export function AccountsView(ctrl: AccountsController) {
               {/* Nama Akun */}
               <div className="grid gap-2">
                 <Label htmlFor="create-name">
-                  <span className="text-destructive">*</span> Nama AkunDelete
+                  <span className="text-destructive">*</span> Nama Akun
                 </Label>
                 <Input
                   id="create-name"

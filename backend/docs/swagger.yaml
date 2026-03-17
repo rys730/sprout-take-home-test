@@ -48,6 +48,39 @@ definitions:
     - name
     - parent_id
     type: object
+  sprout-backend_internal_domain.CreateCustomerRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - name
+    type: object
+  sprout-backend_internal_domain.CreateInvoiceRequest:
+    properties:
+      customer_id:
+        type: string
+      description:
+        type: string
+      due_date:
+        description: YYYY-MM-DD
+        type: string
+      issue_date:
+        description: YYYY-MM-DD
+        type: string
+      total_amount:
+        type: number
+    required:
+    - customer_id
+    - due_date
+    - issue_date
+    - total_amount
+    type: object
   sprout-backend_internal_domain.CreateJournalLine:
     properties:
       account_id:
@@ -143,6 +176,17 @@ definitions:
       name:
         type: string
       parent_id:
+        type: string
+    type: object
+  sprout-backend_internal_domain.UpdateCustomerRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
         type: string
     type: object
   sprout-backend_internal_domain.UpdateJournalRequest:
@@ -458,6 +502,174 @@ paths:
       summary: Refresh JWT token
       tags:
       - auth
+  /customers:
+    get:
+      description: Retrieve a paginated list of customers with optional search
+      parameters:
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []Customer, count: int, total: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve customers
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List customers
+      tags:
+      - customers
+    post:
+      consumes:
+      - application/json
+      description: Create a new customer record
+      parameters:
+      - description: Customer data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: Customer, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create customer
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new customer
+      tags:
+      - customers
+  /customers/{id}:
+    delete:
+      description: Delete a customer by UUID
+      parameters:
+      - description: Customer UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Customer not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a customer
+      tags:
+      - customers
+    get:
+      description: Retrieve a single customer by UUID
+      parameters:
+      - description: Customer UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: Customer'
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Customer not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get customer by ID
+      tags:
+      - customers
+    put:
+      consumes:
+      - application/json
+      description: Update an existing customer's details
+      parameters:
+      - description: Customer UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.UpdateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: Customer, message: string'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Customer not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a customer
+      tags:
+      - customers
   /health:
     get:
       description: Returns the current health status of the server
@@ -472,6 +684,104 @@ paths:
       summary: Health check
       tags:
       - health
+  /invoices:
+    get:
+      description: Retrieve a paginated list of invoices with optional customer_id
+        and status filters
+      parameters:
+      - description: Filter by customer UUID
+        in: query
+        name: customer_id
+        type: string
+      - description: Filter by status (unpaid, partially_paid, paid)
+        in: query
+        name: status
+        type: string
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List invoices
+      tags:
+      - invoices
+    post:
+      consumes:
+      - application/json
+      description: Create a new customer invoice (auto-generates invoice number)
+      parameters:
+      - description: Invoice payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/sprout-backend_internal_domain.CreateInvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create invoice
+      tags:
+      - invoices
+  /invoices/{id}:
+    get:
+      description: Retrieve a single invoice by UUID
+      parameters:
+      - description: Invoice UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get invoice by ID
+      tags:
+      - invoices
   /journals:
     get:
       description: Retrieve a paginated list of journal entries with optional filtering

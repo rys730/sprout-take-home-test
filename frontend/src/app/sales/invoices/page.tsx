@@ -1,12 +1,11 @@
+"use client";
+
+import { useSalesController } from "@/controllers/sales-controller";
+import { SalesView } from "@/views/sales-view";
+
 export default function SalesInvoicesPage() {
+  const salesController = useSalesController();
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Penagihan</h1>
-        <p className="text-muted-foreground">
-          Kelola penagihan dan invoice penjualan.
-        </p>
-      </div>
-    </div>
+    <SalesView salesController={salesController} />
   );
 }

@@ -79,6 +79,7 @@ func main() {
 	// Initialize use cases
 	accountUseCase := usecase.NewAccountUseCase(accountRepo)
 	journalUseCase := usecase.NewJournalUseCase(journalRepo)
+	customerUseCase := usecase.NewCustomerUseCase(customerRepo)
 	paymentUseCase := usecase.NewPaymentUseCase(paymentRepo, invoiceRepo, customerRepo)
 
 	e := echo.New()
@@ -95,6 +96,8 @@ func main() {
 	authHandler := handler.NewAuthHandler(jwtManager)
 	accountHandler := handler.NewAccountHandler(accountUseCase)
 	journalHandler := handler.NewJournalHandler(journalUseCase)
+	customerHandler := handler.NewCustomerHandler(customerUseCase)
+	invoiceHandler := handler.NewInvoiceHandler(invoiceRepo)
 	paymentHandler := handler.NewPaymentHandler(paymentUseCase)
 	api := e.Group("/api")
 
@@ -144,6 +147,20 @@ func main() {
 	payment.GET("", paymentHandler.ListPayments)
 	payment.GET("/:id", paymentHandler.GetPayment)
 	payment.POST("", paymentHandler.RecordPayment)
+
+	// Customer routes
+	customer := v1.Group("/customers")
+	customer.GET("", customerHandler.ListCustomers)
+	customer.GET("/:id", customerHandler.GetCustomer)
+	customer.POST("", customerHandler.CreateCustomer)
+	customer.PUT("/:id", customerHandler.UpdateCustomer)
+	customer.DELETE("/:id", customerHandler.DeleteCustomer)
+
+	// Invoice routes
+	invoice := v1.Group("/invoices")
+	invoice.GET("", invoiceHandler.ListInvoices)
+	invoice.GET("/:id", invoiceHandler.GetInvoice)
+	invoice.POST("", invoiceHandler.CreateInvoice)
 
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	logger.Infof("Server starting on %s", addr)

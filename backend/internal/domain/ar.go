@@ -181,6 +181,15 @@ type CustomerRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// CustomerUseCase defines the business logic interface for customers.
+type CustomerUseCase interface {
+	GetByID(ctx context.Context, id string) (*Customer, error)
+	List(ctx context.Context, filter CustomerFilter) ([]Customer, int64, error)
+	Create(ctx context.Context, req CreateCustomerRequest, createdBy string) (*Customer, error)
+	Update(ctx context.Context, id string, req UpdateCustomerRequest) (*Customer, error)
+	Delete(ctx context.Context, id string) error
+}
+
 // InvoiceRepository defines the persistence interface for invoices.
 type InvoiceRepository interface {
 	GetByID(ctx context.Context, id string) (*Invoice, error)
