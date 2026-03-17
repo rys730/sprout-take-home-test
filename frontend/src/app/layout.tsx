@@ -23,17 +23,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
-        <div className="flex h-screen flex-col" style={{ "--header-height": "3.5rem" } as React.CSSProperties}>
-          <HeaderBar />
-          <div className="flex flex-1 overflow-hidden">
-            <SidebarProvider>
+        <SidebarProvider>
+          <div className="flex h-screen w-full flex-col" style={{ "--header-height": "3.5rem" } as React.CSSProperties}>
+            <HeaderBar />
+            <div className="flex flex-1 overflow-hidden">
               <AppSidebar />
               <SidebarInset>
                 <main className="flex-1 overflow-auto p-4">{children}</main>
               </SidebarInset>
-            </SidebarProvider>
+            </div>
           </div>
-        </div>
+        </SidebarProvider>
       </body>
     </html>
   );

@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   Select,
@@ -80,18 +79,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-            <div className="group-data-[collapsible=icon]:hidden">
-              <Select defaultValue="accounting">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select workspace" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="accounting">Accounting & Tax</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <SidebarTrigger />
+        <div className="group-data-[collapsible=icon]:hidden">
+          <Select defaultValue="accounting">
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select workspace" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="accounting">Accounting & Tax</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </SidebarHeader>
       <SidebarContent>
