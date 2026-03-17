@@ -146,7 +146,7 @@ export function CreateJournalView({
   const isEditing = !!editId;
 
   return (
-    <div className="space-y-6 w-3/4">
+    <div className="space-y-6 sm:w-full md:w-3/4">
       <div className="flex items-center gap-3 bg-white p-5 rounded-md">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/ledger/journal">
