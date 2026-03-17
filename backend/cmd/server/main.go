@@ -18,7 +18,7 @@ import (
 	"sprout-backend/internal/usecase"
 	"sprout-backend/migrations"
 
-	_ "sprout-backend/docs"
+	sproutDocs "sprout-backend/docs"
 
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
@@ -86,6 +86,17 @@ func main() {
 
 	e.HideBanner = true
 	e.HidePort = false
+
+	// Override Swagger host so /docs works correctly when deployed.
+	// Railway sets RAILWAY_PUBLIC_DOMAIN (e.g. "my-app.up.railway.app").
+	// Fall back to HOST:PORT for local development.
+	if railwayHost := os.Getenv("RAILWAY_PUBLIC_DOMAIN"); railwayHost != "" {
+		sproutDocs.SwaggerInfo.Host = railwayHost
+		sproutDocs.SwaggerInfo.Schemes = []string{"https"}
+	} else {
+		sproutDocs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+		sproutDocs.SwaggerInfo.Schemes = []string{"http"}
+	}
 
 	handler.SetupMiddleware(e, cfg, jwtManager)
 
