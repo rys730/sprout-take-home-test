@@ -74,7 +74,7 @@ export function useSalesController(): SalesController {
         try {
             setLoadingInvoices(true);
             setError(null);
-            const res = await invoicesApi.list();
+            const res = await invoicesApi.list({ status: ["unpaid", "partially_paid"] });
             const data: Invoice[] = Array.isArray(res)
                 ? res
                 : (res as unknown as { data: Invoice[] }).data ?? [];

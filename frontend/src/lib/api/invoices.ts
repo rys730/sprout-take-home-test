@@ -7,7 +7,7 @@ import type { Invoice } from "../types";
 
 interface InvoiceListParams {
   customer_id?: string;
-  status?: string;
+  status?: string | string[];
   limit?: string;
   offset?: string;
 }
@@ -22,7 +22,12 @@ export interface CreateInvoiceRequest {
 
 export const invoicesApi = {
   list(params?: InvoiceListParams) {
-    return apiGet<Invoice[]>("/invoices", params as Record<string, string>);
+    const { status, ...rest } = params ?? {};
+    const flat: Record<string, string> = { ...rest } as Record<string, string>;
+    if (status) {
+      flat.status = Array.isArray(status) ? status.join(",") : status;
+    }
+    return apiGet<Invoice[]>("/invoices", flat);
   },
 
   getById(id: string) {

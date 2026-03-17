@@ -83,6 +83,17 @@ func agingRowToDomain(r queries.ListInvoicesAgingRow) domain.Invoice {
 	}
 }
 
+func toInvoiceStatusSlice(statuses []string) []queries.InvoiceStatus {
+	if len(statuses) == 0 {
+		return nil
+	}
+	result := make([]queries.InvoiceStatus, len(statuses))
+	for i, s := range statuses {
+		result[i] = queries.InvoiceStatus(s)
+	}
+	return result
+}
+
 func (r *InvoiceRepository) GetByID(ctx context.Context, id string) (*domain.Invoice, error) {
 	row, err := r.q.GetInvoiceByID(ctx, utils.ParseUUID(id))
 	if err != nil {
@@ -109,10 +120,7 @@ func (r *InvoiceRepository) List(ctx context.Context, filter domain.InvoiceFilte
 		Limit:      limit,
 		Offset:     offset,
 		CustomerID: utils.StringPtrToUUID(nilIfEmpty(filter.CustomerID)),
-		Status: queries.NullInvoiceStatus{
-			InvoiceStatus: queries.InvoiceStatus(filter.Status),
-			Valid:         filter.Status != "",
-		},
+		Statuses:   toInvoiceStatusSlice(filter.Statuses),
 	}
 
 	rows, err := r.q.ListInvoices(ctx, params)
@@ -122,7 +130,7 @@ func (r *InvoiceRepository) List(ctx context.Context, filter domain.InvoiceFilte
 
 	total, err := r.q.CountInvoices(ctx, queries.CountInvoicesParams{
 		CustomerID: params.CustomerID,
-		Status:     params.Status,
+		Statuses:   params.Statuses,
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("count invoices: %w", err)

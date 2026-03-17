@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"sprout-backend/internal/domain"
@@ -25,7 +26,7 @@ func NewInvoiceHandler(repo domain.InvoiceRepository) *InvoiceHandler {
 // @Tags        invoices
 // @Produce     json
 // @Param       customer_id query string false "Filter by customer UUID"
-// @Param       status      query string false "Filter by status (unpaid, partially_paid, paid)"
+// @Param       status      query string false "Comma-separated status filter (unpaid, partially_paid, paid)"
 // @Param       limit       query int    false "Page size (default 20)"
 // @Param       offset      query int    false "Offset (default 0)"
 // @Success     200 {object} map[string]interface{}
@@ -35,9 +36,18 @@ func (h *InvoiceHandler) ListInvoices(c echo.Context) error {
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
+	var statuses []string
+	if raw := c.QueryParam("status"); raw != "" {
+		for _, s := range strings.Split(raw, ",") {
+			if t := strings.TrimSpace(s); t != "" {
+				statuses = append(statuses, t)
+			}
+		}
+	}
+
 	filter := domain.InvoiceFilter{
 		CustomerID: c.QueryParam("customer_id"),
-		Status:     c.QueryParam("status"),
+		Statuses:   statuses,
 		Limit:      limit,
 		Offset:     offset,
 	}

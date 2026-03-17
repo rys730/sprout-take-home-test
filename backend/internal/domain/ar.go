@@ -100,7 +100,7 @@ type UpdateInvoiceRequest struct {
 // InvoiceFilter holds optional filter/pagination parameters for listing invoices.
 type InvoiceFilter struct {
 	CustomerID string
-	Status     string // unpaid, partially_paid, paid
+	Statuses   []string // e.g. ["unpaid", "partially_paid"]
 	Limit      int
 	Offset     int
 }

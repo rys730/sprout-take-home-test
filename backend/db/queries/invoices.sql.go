@@ -14,16 +14,16 @@ import (
 const countInvoices = `-- name: CountInvoices :one
 SELECT COUNT(*) FROM invoices
 WHERE ($1::UUID IS NULL OR customer_id = $1::UUID)
-  AND ($2::invoice_status IS NULL OR status = $2::invoice_status)
+  AND ($2::invoice_status[] IS NULL OR status = ANY($2::invoice_status[]))
 `
 
 type CountInvoicesParams struct {
-	CustomerID pgtype.UUID       `json:"customer_id"`
-	Status     NullInvoiceStatus `json:"status"`
+	CustomerID pgtype.UUID     `json:"customer_id"`
+	Statuses   []InvoiceStatus `json:"statuses"`
 }
 
 func (q *Queries) CountInvoices(ctx context.Context, arg CountInvoicesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countInvoices, arg.CustomerID, arg.Status)
+	row := q.db.QueryRow(ctx, countInvoices, arg.CustomerID, arg.Statuses)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -200,16 +200,16 @@ SELECT i.id, i.invoice_number, i.customer_id, i.issue_date, i.due_date,
 FROM invoices i
 JOIN customers c ON c.id = i.customer_id
 WHERE ($3::UUID IS NULL OR i.customer_id = $3::UUID)
-  AND ($4::invoice_status IS NULL OR i.status = $4::invoice_status)
+  AND ($4::invoice_status[] IS NULL OR i.status = ANY($4::invoice_status[]))
 ORDER BY i.due_date ASC
 LIMIT $1 OFFSET $2
 `
 
 type ListInvoicesParams struct {
-	Limit      int32             `json:"limit"`
-	Offset     int32             `json:"offset"`
-	CustomerID pgtype.UUID       `json:"customer_id"`
-	Status     NullInvoiceStatus `json:"status"`
+	Limit      int32           `json:"limit"`
+	Offset     int32           `json:"offset"`
+	CustomerID pgtype.UUID     `json:"customer_id"`
+	Statuses   []InvoiceStatus `json:"statuses"`
 }
 
 type ListInvoicesRow struct {
@@ -233,7 +233,7 @@ func (q *Queries) ListInvoices(ctx context.Context, arg ListInvoicesParams) ([]L
 		arg.Limit,
 		arg.Offset,
 		arg.CustomerID,
-		arg.Status,
+		arg.Statuses,
 	)
 	if err != nil {
 		return nil, err
