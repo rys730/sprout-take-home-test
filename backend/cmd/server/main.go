@@ -16,6 +16,7 @@ import (
 	"sprout-backend/internal/infrastructure/logger"
 	"sprout-backend/internal/repository"
 	"sprout-backend/internal/usecase"
+	"sprout-backend/migrations"
 
 	_ "sprout-backend/docs"
 
@@ -61,9 +62,8 @@ func main() {
 		logger.Fatalf("Failed to ping database: %v", err)
 	}
 
-	migrator := database.NewMigrator(db.GetDB())
-	migrationsDir := "./migrations"
-	if err := migrator.RunMigrations(migrationsDir); err != nil {
+	migrator := database.NewMigrator(db.GetDB(), migrations.FS)
+	if err := migrator.RunMigrations(); err != nil {
 		logger.Fatalf("Failed to run migrations: %v", err)
 	}
 

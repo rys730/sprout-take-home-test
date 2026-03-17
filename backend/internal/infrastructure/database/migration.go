@@ -3,22 +3,27 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
+
+	"sprout-backend/internal/infrastructure/logger"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
-	"sprout-backend/internal/infrastructure/logger"
 )
 
 type Migrator struct {
-	db *sql.DB
+	db           *sql.DB
+	migrationsFS fs.FS
 }
 
-func NewMigrator(db *sql.DB) *Migrator {
-	return &Migrator{db: db}
+func NewMigrator(db *sql.DB, migrationsFS fs.FS) *Migrator {
+	return &Migrator{db: db, migrationsFS: migrationsFS}
 }
 
-func (m *Migrator) RunMigrations(migrationsDir string) error {
+func (m *Migrator) RunMigrations() error {
 	logger.Info("Running database migrations...")
+
+	goose.SetBaseFS(m.migrationsFS)
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("failed to set dialect: %w", err)
@@ -31,7 +36,7 @@ func (m *Migrator) RunMigrations(migrationsDir string) error {
 
 	logger.Infof("Current database migration version: %d", currentVersion)
 
-	if err := goose.Up(m.db, migrationsDir); err != nil {
+	if err := goose.Up(m.db, "."); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -49,9 +54,10 @@ func (m *Migrator) RunMigrations(migrationsDir string) error {
 	return nil
 }
 
-func (m *Migrator) GetStatus(migrationsDir string) error {
+func (m *Migrator) GetStatus() error {
+	goose.SetBaseFS(m.migrationsFS)
 	logger.Info("Migration status:")
-	if err := goose.Status(m.db, migrationsDir); err != nil {
+	if err := goose.Status(m.db, "."); err != nil {
 		return fmt.Errorf("failed to get migration status: %w", err)
 	}
 	return nil
